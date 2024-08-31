@@ -1,0 +1,5 @@
+.DS_Store
+.next
+frontend/node_modules
+.env
+prompts/
