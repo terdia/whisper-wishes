@@ -1,9 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Wind, Flower, User, Lock } from 'lucide-react';
+import { Wind, Flower, User, Lock, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Confetti from 'react-confetti';
+import { syncLocalWishes } from '../utils/wishSync';
 
 interface Wish {
   id: string;
@@ -20,13 +22,19 @@ const WishCreator: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, fetchUserStatistics } = useAuth();
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (user) {
-      fetchWishes();
+      syncLocalWishes(user.id).then(() => {
+        fetchWishes();
+      });
+    } else {
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
+      setWishes(localWishes);
     }
   }, [user]);
 
@@ -43,40 +51,52 @@ const WishCreator: React.FC = () => {
       setWishes(data.map(wish => ({
         ...wish,
         text: wish.wish_text, 
-        x: Math.random() * 80 + 10, // Keep within 10-90% of container width
-        y: Math.random() * 60 + 10, // Keep within 10-70% of container height
+        x: Math.random() * 60 + 20, // Keep within 20-80% of container width
+        y: Math.random() * 40 + 30, // Keep within 30-70% of container height
       })));
     }
   };
 
   const createWish = async () => {
-    if (!user || !wishText.trim() || !category) return;
+    if (!wishText.trim() || !category) return;
     
-    const { data, error } = await supabase
-      .from('wishes')
-      .insert({ 
-        wish_text: wishText, 
-        user_id: user.id,
-        category,
-        is_private: isPrivate,
-        is_visible: true
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating wish:', error);
-      return;
-    }
-
-    const newWish: Wish = {
-      id: data.id,
-      text: data.wish_text,
-      x: Math.random() * 80 + 10, // Keep within 10-90% of container width
-      y: Math.random() * 60 + 10, // Keep within 10-70% of container height
-      is_visible: true,
-      category: data.category
+    const newWish = {
+      text: wishText,
+      category: category,
+      is_private: isPrivate,
+      created_at: new Date().toISOString()
     };
+
+    if (user) {
+      // Create wish in database for authenticated users
+      const { data, error } = await supabase
+        .from('wishes')
+        .insert({ 
+          wish_text: wishText, 
+          user_id: user.id,
+          category,
+          is_private: isPrivate,
+          is_visible: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating wish:', error);
+        return;
+      }
+
+      newWish.id = data.id;
+      
+      // Fetch updated statistics
+      await fetchUserStatistics();
+    } else {
+      // Store wish in local storage for non-authenticated users
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
+      newWish.id = Date.now().toString(); // Use timestamp as ID for local wishes
+      localWishes.push(newWish);
+      localStorage.setItem('localWishes', JSON.stringify(localWishes));
+    }
 
     setWishes([...wishes, newWish]);
     setWishText('');
@@ -96,30 +116,46 @@ const WishCreator: React.FC = () => {
     const blownWishes = wishes.map(wish => ({ ...wish, y: -20, is_visible: false }));
     setWishes(blownWishes);
     
-    // Update is_visible status in the database
-    const wishIds = blownWishes.map(wish => wish.id);
-    const { error } = await supabase
-      .from('wishes')
-      .update({ is_visible: false })
-      .in('id', wishIds);
+    setShowConfetti(true);
 
-    if (error) {
-      console.error('Error updating wishes visibility:', error);
+    if (user) {
+      // Update is_visible status in the database for authenticated users
+      const wishIds = blownWishes.map(wish => wish.id);
+      const { error } = await supabase
+        .from('wishes')
+        .update({ is_visible: false })
+        .in('id', wishIds);
+
+      if (error) {
+        console.error('Error updating wishes visibility:', error);
+      }
+    } else {
+      // Update local storage for non-authenticated users
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
+      const updatedLocalWishes = localWishes.map(wish => {
+        const blownWish = blownWishes.find(bw => bw.id === wish.id);
+        return blownWish || { ...wish, is_visible: false };
+      });
+      localStorage.setItem('localWishes', JSON.stringify(updatedLocalWishes));
     }
 
-    setTimeout(() => setWishes([]), 1000);
+    setTimeout(() => {
+      setWishes([]);
+      setShowConfetti(false);
+    }, 5000);
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-teal-100 to-purple-200 p-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-teal-100 to-purple-200 p-4 font-sans relative overflow-hidden">
+      {showConfetti && <Confetti />}
       {/* Subtle floating dandelion seeds */}
       {[...Array(5)].map((_, i) => (
         <motion.div
           key={i}
           className="absolute text-gray-300 text-opacity-30 pointer-events-none"
           style={{
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 60 + 20}%`,
+            left: `${Math.random() * 60 + 20}%`,
             fontSize: `${Math.random() * 20 + 10}px`,
           }}
           animate={{
@@ -137,8 +173,8 @@ const WishCreator: React.FC = () => {
         </motion.div>
       ))}
 
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-purple-800">Every wish counts</h1>
+      <header className="flex flex-col sm:flex-row justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-purple-800 mb-4 sm:mb-0">Every wish counts</h1>
         <div className="flex items-center space-x-4">
           <div className="bg-white bg-opacity-50 px-3 py-1 rounded-full text-purple-800">
             Level {level}
@@ -152,7 +188,7 @@ const WishCreator: React.FC = () => {
         </div>
       </header>
       
-      <main className="relative h-3/4 bg-white bg-opacity-30 rounded-lg shadow-lg overflow-hidden">
+      <main className="relative h-[60vh] md:h-[70vh] bg-white bg-opacity-30 rounded-lg shadow-lg overflow-hidden mb-4">
         <div ref={containerRef} className="absolute inset-0 overflow-hidden">
           {wishes.map((wish) => (
             <DraggableWish key={wish.id} wish={wish} />
@@ -168,25 +204,38 @@ const WishCreator: React.FC = () => {
             maxLength={200}
             className="w-full p-3 rounded-full bg-white bg-opacity-70 text-purple-800 placeholder-purple-400"
           />
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               className="flex-grow p-2 rounded-full bg-white bg-opacity-70 text-purple-800"
             >
-              <option value="">Select category</option>
-              <option value="personal">Personal</option>
-              <option value="career">Career</option>
-              <option value="health">Health</option>
-              <option value="relationships">Relationships</option>
-              <option value="other">Other</option>
+               <option value="">Select category</option>
+                <option value="personal">Personal Growth</option>
+                <option value="career">Career & Education</option>
+                <option value="health">Health & Wellness</option>
+                <option value="relationships">Relationships & Family</option>
+                <option value="financial">Financial Goals</option>
+                <option value="travel">Travel & Adventure</option>
+                <option value="creativity">Creativity & Hobbies</option>
+                <option value="spiritual">Spiritual & Mindfulness</option>
+                <option value="community">Community & Social Impact</option>
+                <option value="environmental">Environmental & Sustainability</option>
+                <option value="learning">Learning & Skills</option>
+                <option value="lifestyle">Lifestyle & Home</option>
+                <option value="other">Other</option>
             </select>
-            <button
-              onClick={() => setIsPrivate(!isPrivate)}
-              className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600 text-white' : 'bg-white bg-opacity-70 text-purple-800'}`}
-            >
-              <Lock size={20} />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setIsPrivate(!isPrivate)}
+                className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600 text-white' : 'bg-white bg-opacity-70 text-purple-800'}`}
+              >
+                {isPrivate ? <Lock size={20} /> : <Globe size={20} />}
+              </button>
+              <span className="text-sm text-purple-800">
+                {isPrivate ? "Private" : "Public"}
+              </span>
+            </div>
             <button
               onClick={createWish}
               className="bg-purple-600 text-white px-4 py-2 rounded-full"
@@ -197,12 +246,20 @@ const WishCreator: React.FC = () => {
         </div>
       </main>
       
-      <footer className="flex justify-center space-x-4 mt-6">
-        <button onClick={blowWishes} className="bg-purple-600 text-white px-6 py-2 rounded-full flex items-center">
+      <div className="text-center mb-4 text-purple-800">
+        <p>
+          {isPrivate 
+            ? "Your wish will be kept private and only visible to you." 
+            : "Your wish will be visible in the public Wish Garden for others to support. You can toggle to make it private."}
+        </p>
+      </div>
+
+      <footer className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+        <button onClick={blowWishes} className="bg-purple-600 text-white px-6 py-2 rounded-full flex items-center justify-center">
           <Wind className="mr-2" /> Blow Wishes
         </button>
         <Link href="/global-garden">
-          <a className="bg-teal-500 text-white px-6 py-2 rounded-full flex items-center">
+          <a className="bg-teal-500 text-white px-6 py-2 rounded-full flex items-center justify-center">
             <Flower className="mr-2" /> Wish Garden
           </a>
         </Link>
@@ -222,7 +279,7 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish }) => {
 
   return (
     <div
-      className={`absolute w-16 h-16 ${randomColor} rounded-full flex items-center justify-center cursor-move transition-all duration-300 hover:scale-110 shadow-lg`}
+      className={`absolute w-12 h-12 sm:w-16 sm:h-16 ${randomColor} rounded-full flex items-center justify-center cursor-move transition-all duration-300 hover:scale-110 shadow-lg`}
       style={{
         left: `${wish.x}%`,
         top: `${wish.y}%`,
@@ -247,7 +304,7 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish }) => {
           </button>
         </div>
       </div>
-      <span className="text-2xl">🌟</span>
+      <span className="text-xl sm:text-2xl">🌟</span>
     </div>
   );
 };

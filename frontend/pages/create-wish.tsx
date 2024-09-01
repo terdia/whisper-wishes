@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { useAuth } from '../contexts/AuthContext'
 import { motion } from 'framer-motion'
 
-export default withAuth(function CreateWish() {
+export default function CreateWish() {
   const [wishText, setWishText] = useState('')
   const [category, setCategory] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
@@ -20,9 +20,22 @@ export default withAuth(function CreateWish() {
     setIsSubmitting(true)
 
     if (!user) {
-      console.error('User not authenticated')
-      setError('User not authenticated. Please log in.')
+      // Store wish in local storage for non-authenticated users
+      const localWish = {
+        wish_text: wishText,
+        category,
+        is_private: isPrivate,
+        created_at: new Date().toISOString()
+      }
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]')
+      localWishes.push(localWish)
+      localStorage.setItem('localWishes', JSON.stringify(localWishes))
+      
+      setWishText('')
+      setCategory('')
+      setIsPrivate(false)
       setIsSubmitting(false)
+      router.push('/')
       return
     }
 
@@ -116,11 +129,19 @@ export default withAuth(function CreateWish() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="">Select a category</option>
-                <option value="personal">Personal</option>
-                <option value="career">Career</option>
-                <option value="health">Health</option>
-                <option value="relationships">Relationships</option>
+                <option value="">Select category</option>
+                <option value="personal">Personal Growth</option>
+                <option value="career">Career & Education</option>
+                <option value="health">Health & Wellness</option>
+                <option value="relationships">Relationships & Family</option>
+                <option value="financial">Financial Goals</option>
+                <option value="travel">Travel & Adventure</option>
+                <option value="creativity">Creativity & Hobbies</option>
+                <option value="spiritual">Spiritual & Mindfulness</option>
+                <option value="community">Community & Social Impact</option>
+                <option value="environmental">Environmental & Sustainability</option>
+                <option value="learning">Learning & Skills</option>
+                <option value="lifestyle">Lifestyle & Home</option>
                 <option value="other">Other</option>
               </select>
             </div>
@@ -155,4 +176,4 @@ export default withAuth(function CreateWish() {
       </motion.div>
     </div>
   )
-})
+}

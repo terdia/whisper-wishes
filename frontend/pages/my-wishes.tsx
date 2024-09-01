@@ -1,12 +1,13 @@
 import { useEffect, useState, useMemo } from 'react'
 import { supabase } from '../utils/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
-import withAuth from '../components/withAuth'
 import { motion, AnimatePresence } from 'framer-motion'
 import { Calendar, momentLocalizer } from 'react-big-calendar'
 import moment from 'moment'
 import 'react-big-calendar/lib/css/react-big-calendar.css'
 import { Trash2 } from 'lucide-react'
+import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt'
+import { syncLocalWishes } from '../utils/wishSync'
 
 interface Wish {
   id: string
@@ -34,8 +35,12 @@ const MyWishes = () => {
   const { user } = useAuth()
 
   useEffect(() => {
-    fetchWishes()
-  }, [user])
+    if (user) {
+      syncLocalWishes(user.id).then(() => {
+        fetchWishes();
+      });
+    }
+  }, [user]);
 
   async function fetchWishes() {
     if (!user) return
@@ -145,6 +150,10 @@ const MyWishes = () => {
     </div>
   )
 
+  if (!user) {
+    return <UnauthenticatedUserPrompt />
+  }
+
   return (
     <div className={`min-h-[calc(100vh-10rem)] p-8 ${themes[theme]}`}>
       <div className="max-w-7xl mx-auto">
@@ -173,10 +182,18 @@ const MyWishes = () => {
               className="p-2 rounded bg-white bg-opacity-20 text-white"
             >
               <option value="">All Categories</option>
-              <option value="personal">Personal</option>
-              <option value="career">Career</option>
-              <option value="health">Health</option>
-              <option value="relationships">Relationships</option>
+              <option value="personal">Personal Growth</option>
+              <option value="career">Career & Education</option>
+              <option value="health">Health & Wellness</option>
+              <option value="relationships">Relationships & Family</option>
+              <option value="financial">Financial Goals</option>
+              <option value="travel">Travel & Adventure</option>
+              <option value="creativity">Creativity & Hobbies</option>
+              <option value="spiritual">Spiritual & Mindfulness</option>
+              <option value="community">Community & Social Impact</option>
+              <option value="environmental">Environmental & Sustainability</option>
+              <option value="learning">Learning & Skills</option>
+              <option value="lifestyle">Lifestyle & Home</option>
               <option value="other">Other</option>
             </select>
           </div>
@@ -239,4 +256,4 @@ const MyWishes = () => {
   )
 }
 
-export default withAuth(MyWishes)
+export default MyWishes
