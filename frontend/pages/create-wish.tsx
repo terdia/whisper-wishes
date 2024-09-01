@@ -129,11 +129,19 @@ export default function CreateWish() {
                 value={category}
                 onChange={(e) => setCategory(e.target.value)}
               >
-                <option value="">Select a category</option>
-                <option value="personal">Personal</option>
-                <option value="career">Career</option>
-                <option value="health">Health</option>
-                <option value="relationships">Relationships</option>
+                <option value="">Select category</option>
+                <option value="personal">Personal Growth</option>
+                <option value="career">Career & Education</option>
+                <option value="health">Health & Wellness</option>
+                <option value="relationships">Relationships & Family</option>
+                <option value="financial">Financial Goals</option>
+                <option value="travel">Travel & Adventure</option>
+                <option value="creativity">Creativity & Hobbies</option>
+                <option value="spiritual">Spiritual & Mindfulness</option>
+                <option value="community">Community & Social Impact</option>
+                <option value="environmental">Environmental & Sustainability</option>
+                <option value="learning">Learning & Skills</option>
+                <option value="lifestyle">Lifestyle & Home</option>
                 <option value="other">Other</option>
               </select>
             </div>

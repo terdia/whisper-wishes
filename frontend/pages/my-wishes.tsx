@@ -182,10 +182,18 @@ const MyWishes = () => {
               className="p-2 rounded bg-white bg-opacity-20 text-white"
             >
               <option value="">All Categories</option>
-              <option value="personal">Personal</option>
-              <option value="career">Career</option>
-              <option value="health">Health</option>
-              <option value="relationships">Relationships</option>
+              <option value="personal">Personal Growth</option>
+              <option value="career">Career & Education</option>
+              <option value="health">Health & Wellness</option>
+              <option value="relationships">Relationships & Family</option>
+              <option value="financial">Financial Goals</option>
+              <option value="travel">Travel & Adventure</option>
+              <option value="creativity">Creativity & Hobbies</option>
+              <option value="spiritual">Spiritual & Mindfulness</option>
+              <option value="community">Community & Social Impact</option>
+              <option value="environmental">Environmental & Sustainability</option>
+              <option value="learning">Learning & Skills</option>
+              <option value="lifestyle">Lifestyle & Home</option>
               <option value="other">Other</option>
             </select>
           </div>
