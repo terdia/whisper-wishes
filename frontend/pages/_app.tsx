@@ -3,6 +3,8 @@ import type { AppProps } from 'next/app'
 import Layout from '../components/Layout'
 import { AuthProvider } from '../contexts/AuthContext'
 import Head from 'next/head'
+import { ToastContainer } from 'react-toastify'
+import 'react-toastify/dist/ReactToastify.css'
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
@@ -15,6 +17,7 @@ function MyApp({ Component, pageProps }: AppProps) {
           <link rel="icon" type="image/png" sizes="16x16" href="/favicon-16x16.png" />
         </Head>
         <Component {...pageProps} />
+        <ToastContainer />
       </Layout>
     </AuthProvider>
   )

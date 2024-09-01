@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, ChevronDown, Loader2 } from 'lucide-react';
+import { Menu, X, ChevronDown, Loader2, Bell } from 'lucide-react';
 import { User } from '@supabase/supabase-js'
+import { toast } from 'react-toastify';
 
 interface UserProfile {
     id: string;
@@ -57,7 +58,7 @@ const UserAvatar: React.FC<{ user: User | null, userProfile: UserProfile | null 
 }
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, userProfile, signOut, isLoading } = useAuth();
+  const { user, userProfile, signOut, isLoading, newWishNotification, clearNewWishNotification } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -74,6 +75,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setIsMenuOpen(false);
     setIsDropdownOpen(false);
   };
+
+  useEffect(() => {
+    if (newWishNotification) {
+      toast.info(newWishNotification, {
+        onClose: clearNewWishNotification
+      });
+      // Clear the notification after showing the toast
+      clearNewWishNotification();
+    }
+  }, [newWishNotification, clearNewWishNotification]);
 
   if (isLoading) {
     return (
@@ -95,7 +106,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               <Link href="/">
                 <a className="flex-shrink-0 flex items-center">
                   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 50" className="h-8 w-auto">
-                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 300 50" className="h-8 w-auto">
                     <defs>
                       <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
                         <stop offset="0%" style={{ stopColor: '#8B5CF6', stopOpacity: 1 }} />
@@ -116,8 +126,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </g>
                     
                     <text x="42" y="33" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="bold" fill="url(#grad)">Whisper Wishes</text>
-                  </svg>
-                  </svg>
+                  </svg>     
                 </a>
               </Link>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
@@ -133,6 +142,11 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </div>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
+              {user && (
+                <div className="mr-4">
+                  <Bell className="h-6 w-6 text-gray-400" />
+                </div>
+              )}
               {user ? (
                 <div className="ml-3 relative">
                   <div>

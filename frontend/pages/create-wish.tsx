@@ -5,7 +5,7 @@ import { useRouter } from 'next/router'
 import { useAuth } from '../contexts/AuthContext'
 import { motion } from 'framer-motion'
 
-export default withAuth(function CreateWish() {
+export default function CreateWish() {
   const [wishText, setWishText] = useState('')
   const [category, setCategory] = useState('')
   const [isPrivate, setIsPrivate] = useState(false)
@@ -20,9 +20,22 @@ export default withAuth(function CreateWish() {
     setIsSubmitting(true)
 
     if (!user) {
-      console.error('User not authenticated')
-      setError('User not authenticated. Please log in.')
+      // Store wish in local storage for non-authenticated users
+      const localWish = {
+        wish_text: wishText,
+        category,
+        is_private: isPrivate,
+        created_at: new Date().toISOString()
+      }
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]')
+      localWishes.push(localWish)
+      localStorage.setItem('localWishes', JSON.stringify(localWishes))
+      
+      setWishText('')
+      setCategory('')
+      setIsPrivate(false)
       setIsSubmitting(false)
+      router.push('/')
       return
     }
 
@@ -155,4 +168,4 @@ export default withAuth(function CreateWish() {
       </motion.div>
     </div>
   )
-})
+}

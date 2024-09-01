@@ -4,6 +4,8 @@ import { useAuth } from '../contexts/AuthContext';
 import { Wind, Flower, User, Lock } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
+import Confetti from 'react-confetti';
+import { syncLocalWishes } from '../utils/wishSync';
 
 interface Wish {
   id: string;
@@ -20,13 +22,19 @@ const WishCreator: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
+  const { user, fetchUserStatistics } = useAuth();
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
+  const [showConfetti, setShowConfetti] = useState(false);
 
   useEffect(() => {
     if (user) {
-      fetchWishes();
+      syncLocalWishes(user.id).then(() => {
+        fetchWishes();
+      });
+    } else {
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
+      setWishes(localWishes);
     }
   }, [user]);
 
@@ -50,33 +58,45 @@ const WishCreator: React.FC = () => {
   };
 
   const createWish = async () => {
-    if (!user || !wishText.trim() || !category) return;
+    if (!wishText.trim() || !category) return;
     
-    const { data, error } = await supabase
-      .from('wishes')
-      .insert({ 
-        wish_text: wishText, 
-        user_id: user.id,
-        category,
-        is_private: isPrivate,
-        is_visible: true
-      })
-      .select()
-      .single();
-
-    if (error) {
-      console.error('Error creating wish:', error);
-      return;
-    }
-
-    const newWish: Wish = {
-      id: data.id,
-      text: data.wish_text,
-      x: Math.random() * 80 + 10, // Keep within 10-90% of container width
-      y: Math.random() * 60 + 10, // Keep within 10-70% of container height
-      is_visible: true,
-      category: data.category
+    const newWish = {
+      text: wishText,
+      category: category,
+      is_private: isPrivate,
+      created_at: new Date().toISOString()
     };
+
+    if (user) {
+      // Create wish in database for authenticated users
+      const { data, error } = await supabase
+        .from('wishes')
+        .insert({ 
+          wish_text: wishText, 
+          user_id: user.id,
+          category,
+          is_private: isPrivate,
+          is_visible: true
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating wish:', error);
+        return;
+      }
+
+      newWish.id = data.id;
+      
+      // Fetch updated statistics
+      await fetchUserStatistics();
+    } else {
+      // Store wish in local storage for non-authenticated users
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
+      newWish.id = Date.now().toString(); // Use timestamp as ID for local wishes
+      localWishes.push(newWish);
+      localStorage.setItem('localWishes', JSON.stringify(localWishes));
+    }
 
     setWishes([...wishes, newWish]);
     setWishText('');
@@ -96,22 +116,39 @@ const WishCreator: React.FC = () => {
     const blownWishes = wishes.map(wish => ({ ...wish, y: -20, is_visible: false }));
     setWishes(blownWishes);
     
-    // Update is_visible status in the database
-    const wishIds = blownWishes.map(wish => wish.id);
-    const { error } = await supabase
-      .from('wishes')
-      .update({ is_visible: false })
-      .in('id', wishIds);
+    // Show confetti
+    setShowConfetti(true);
 
-    if (error) {
-      console.error('Error updating wishes visibility:', error);
+    if (user) {
+      // Update is_visible status in the database for authenticated users
+      const wishIds = blownWishes.map(wish => wish.id);
+      const { error } = await supabase
+        .from('wishes')
+        .update({ is_visible: false })
+        .in('id', wishIds);
+
+      if (error) {
+        console.error('Error updating wishes visibility:', error);
+      }
+    } else {
+      // Update local storage for non-authenticated users
+      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
+      const updatedLocalWishes = localWishes.map(wish => {
+        const blownWish = blownWishes.find(bw => bw.id === wish.id);
+        return blownWish || { ...wish, is_visible: false };
+      });
+      localStorage.setItem('localWishes', JSON.stringify(updatedLocalWishes));
     }
 
-    setTimeout(() => setWishes([]), 1000);
+    setTimeout(() => {
+      setWishes([]);
+      setShowConfetti(false);
+    }, 5000); // Increased timeout to allow confetti to show for 5 seconds
   };
 
   return (
     <div className="h-screen bg-gradient-to-br from-teal-100 to-purple-200 p-4 font-sans relative overflow-hidden">
+      {showConfetti && <Confetti />}
       {/* Subtle floating dandelion seeds */}
       {[...Array(5)].map((_, i) => (
         <motion.div
