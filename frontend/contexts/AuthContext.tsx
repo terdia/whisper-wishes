@@ -1,7 +1,8 @@
-import React, { createContext, useState, useEffect, useContext } from 'react'
+import React, { createContext, useState, useEffect, useContext, useCallback } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../utils/supabaseClient'
 import { User, Session } from '@supabase/supabase-js'
+import { syncLocalWishes } from '../utils/wishSync'
 
 interface UserProfile {
   id: string;
@@ -20,7 +21,15 @@ interface AuthContextType {
   signUp: (email: string, password: string, username: string) => Promise<void>;
   signOut: () => Promise<void>;
   updateProfile: (data: Partial<UserProfile>) => Promise<void>;
-  isLoading: boolean; 
+  isLoading: boolean;
+  userStatistics: {
+    totalWishes: number;
+    wishesShared: number;
+    wishesSupported: number;
+  };
+  fetchUserStatistics: () => Promise<void>;
+  newWishNotification: string | null;
+  clearNewWishNotification: () => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -29,12 +38,18 @@ export const AuthProvider: React.FC = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
   const [session, setSession] = useState<Session | null>(null)
-  const [isLoading, setIsLoading] = useState(true) 
+  const [isLoading, setIsLoading] = useState(true)
+  const [userStatistics, setUserStatistics] = useState({
+    totalWishes: 0,
+    wishesShared: 0,
+    wishesSupported: 0
+  })
+  const [newWishNotification, setNewWishNotification] = useState<string | null>(null)
   const router = useRouter()
 
   useEffect(() => {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setIsLoading(true) 
+      setIsLoading(true)
       setSession(session)
       if (session?.user) {
         setUser(session.user)
@@ -43,7 +58,7 @@ export const AuthProvider: React.FC = ({ children }) => {
         setUser(null)
         setUserProfile(null)
       }
-      setIsLoading(false) 
+      setIsLoading(false)
     })
 
     // Initial session check
@@ -56,8 +71,29 @@ export const AuthProvider: React.FC = ({ children }) => {
       setIsLoading(false)
     })
 
-    return () => subscription.unsubscribe()
+    // Set up global subscription for new public wishes
+    const wishesSubscription = supabase
+      .channel('public:wishes')
+      .on('postgres_changes', 
+        { event: 'INSERT', schema: 'public', table: 'wishes', filter: 'is_private=eq.false' },
+        handleNewPublicWish
+      )
+      .subscribe()
+
+    return () => {
+      subscription.unsubscribe()
+      wishesSubscription.unsubscribe()
+    }
   }, [])
+
+  const handleNewPublicWish = (payload: any) => {
+    const newWish = payload.new
+    setNewWishNotification(`New wish: ${newWish.wish_text}`)
+  }
+
+  const clearNewWishNotification = () => {
+    setNewWishNotification(null)
+  }
 
   const fetchUserProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -69,7 +105,6 @@ export const AuthProvider: React.FC = ({ children }) => {
     if (error) {
       console.error('Error fetching user profile:', error);
     } else if (data) {
-      // Always get the public URL for the avatar
       if (data.avatar_url) {
         const { data: publicUrlData } = supabase.storage
           .from('avatars')
@@ -77,7 +112,6 @@ export const AuthProvider: React.FC = ({ children }) => {
         data.avatar_url = publicUrlData.publicUrl;
       }
       setUserProfile(data);
-      console.log('User profile fetched:', data);
     }
   }
 
@@ -86,24 +120,47 @@ export const AuthProvider: React.FC = ({ children }) => {
     if (error) throw error
     if (data.user) {
       await fetchUserProfile(data.user.id)
+      await syncLocalWishes(data.user.id)
     }
     router.push('/my-wishes')
   }
 
   const signUp = async (email: string, password: string, username: string) => {
-    const { data, error } = await supabase.auth.signUp({ 
-      email, 
-      password,
-      options: {
-        data: { username }
+    try {
+      const { data, error } = await supabase.auth.signUp({ 
+        email, 
+        password,
+        options: {
+          data: { username }
+        }
+      });
+      
+      if (error) throw error;
+      
+      if (data.user) {
+        const { error: profileError } = await supabase
+          .from('user_profiles')
+          .insert({ 
+            id: data.user.id, 
+            username: username,
+            is_public: false,
+            is_premium: false
+          })
+          .single();
+
+        if (profileError) {
+          console.error('Error creating user profile:', profileError);
+          throw profileError;
+        }
+
+        await fetchUserProfile(data.user.id);
+        await syncLocalWishes(data.user.id);
       }
-    })
-    if (error) throw error
-    if (data.user) {
-      await supabase.from('user_profiles').insert({ id: data.user.id, username })
-      await fetchUserProfile(data.user.id)
+      router.push('/my-wishes');
+    } catch (error) {
+      console.error('Error during sign up:', error);
+      throw error;
     }
-    router.push('/my-wishes')
   }
 
   const signOut = async () => {
@@ -125,8 +182,41 @@ export const AuthProvider: React.FC = ({ children }) => {
     await fetchUserProfile(user.id); 
   }
 
+  const fetchUserStatistics = async () => {
+    if (!user) return;
+    const { data, error } = await supabase.rpc('get_user_statistics', { p_user_id: user.id });
+    if (error) {
+      console.error('Error fetching user statistics:', error);
+    } else if (data && data.length > 0) {
+      setUserStatistics({
+        totalWishes: data[0].total_wishes_made,
+        wishesShared: data[0].wishes_shared,
+        wishesSupported: data[0].wishes_supported
+      });
+    }
+  };
+
+  useEffect(() => {
+    if (user) {
+      fetchUserStatistics();
+    }
+  }, [user]);
+
   return (
-    <AuthContext.Provider value={{ user, userProfile, session, signIn, signUp, signOut, updateProfile, isLoading }}>
+    <AuthContext.Provider value={{ 
+      user, 
+      userProfile, 
+      session, 
+      signIn, 
+      signUp, 
+      signOut, 
+      updateProfile, 
+      isLoading,
+      userStatistics,
+      fetchUserStatistics,
+      newWishNotification,
+      clearNewWishNotification
+    }}>
       {children}
     </AuthContext.Provider>
   )

@@ -217,7 +217,7 @@ const Profile = () => {
             className="mt-4 sm:mt-0 inline-flex items-center px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 transition duration-300 shadow-md"
         >
             <Edit2 className="mr-2" size={18} />
-            {isEditing ? 'Save Changes' : 'Edit Wishboard'}
+            {isEditing ? 'Cancel' : 'Edit Wishboard'}
         </button>
     </div>
 
