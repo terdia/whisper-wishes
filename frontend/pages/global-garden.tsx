@@ -28,13 +28,11 @@ export default function GlobalGarden() {
     else setWishes(data)
   }
 
-  async function supportWish(id) {
-    if (!supabase) return; // Add this check
-
+  async function supportWish(wishId: string) {
     const { data, error } = await supabase
-      .rpc('increment_support_count', { wish_id: id })
+      .rpc('support_wish', { p_user_id: user.id, p_wish_id: wishId })
 
-    if (error) console.log('error', error)
+    if (error) console.error('Error supporting wish:', error)
     else fetchWishes()
   }
 
