@@ -18,7 +18,9 @@
     "framer-motion": "^10.16.4",
     "react-big-calendar": "^1.8.4",
     "date-fns": "^2.30.0",
-    "lucide-react": "^0.336.0"
+    "lucide-react": "^0.336.0",
+    "react-chartjs-2": "^5.2.0",
+    "chart.js": "^4.4.4"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
