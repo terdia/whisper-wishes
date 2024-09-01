@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Wind, Flower, User, Lock } from 'lucide-react';
+import { Wind, Flower, User, Lock, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
 import Confetti from 'react-confetti';
@@ -51,8 +51,8 @@ const WishCreator: React.FC = () => {
       setWishes(data.map(wish => ({
         ...wish,
         text: wish.wish_text, 
-        x: Math.random() * 80 + 10, // Keep within 10-90% of container width
-        y: Math.random() * 60 + 10, // Keep within 10-70% of container height
+        x: Math.random() * 60 + 20, // Keep within 20-80% of container width
+        y: Math.random() * 40 + 30, // Keep within 30-70% of container height
       })));
     }
   };
@@ -116,7 +116,6 @@ const WishCreator: React.FC = () => {
     const blownWishes = wishes.map(wish => ({ ...wish, y: -20, is_visible: false }));
     setWishes(blownWishes);
     
-    // Show confetti
     setShowConfetti(true);
 
     if (user) {
@@ -143,11 +142,11 @@ const WishCreator: React.FC = () => {
     setTimeout(() => {
       setWishes([]);
       setShowConfetti(false);
-    }, 5000); // Increased timeout to allow confetti to show for 5 seconds
+    }, 5000);
   };
 
   return (
-    <div className="h-screen bg-gradient-to-br from-teal-100 to-purple-200 p-4 font-sans relative overflow-hidden">
+    <div className="min-h-screen bg-gradient-to-br from-teal-100 to-purple-200 p-4 font-sans relative overflow-hidden">
       {showConfetti && <Confetti />}
       {/* Subtle floating dandelion seeds */}
       {[...Array(5)].map((_, i) => (
@@ -155,8 +154,8 @@ const WishCreator: React.FC = () => {
           key={i}
           className="absolute text-gray-300 text-opacity-30 pointer-events-none"
           style={{
-            top: `${Math.random() * 100}%`,
-            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 60 + 20}%`,
+            left: `${Math.random() * 60 + 20}%`,
             fontSize: `${Math.random() * 20 + 10}px`,
           }}
           animate={{
@@ -174,8 +173,8 @@ const WishCreator: React.FC = () => {
         </motion.div>
       ))}
 
-      <header className="flex justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-purple-800">Every wish counts</h1>
+      <header className="flex flex-col sm:flex-row justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold text-purple-800 mb-4 sm:mb-0">Every wish counts</h1>
         <div className="flex items-center space-x-4">
           <div className="bg-white bg-opacity-50 px-3 py-1 rounded-full text-purple-800">
             Level {level}
@@ -189,7 +188,7 @@ const WishCreator: React.FC = () => {
         </div>
       </header>
       
-      <main className="relative h-3/4 bg-white bg-opacity-30 rounded-lg shadow-lg overflow-hidden">
+      <main className="relative h-[60vh] md:h-[70vh] bg-white bg-opacity-30 rounded-lg shadow-lg overflow-hidden mb-4">
         <div ref={containerRef} className="absolute inset-0 overflow-hidden">
           {wishes.map((wish) => (
             <DraggableWish key={wish.id} wish={wish} />
@@ -205,7 +204,7 @@ const WishCreator: React.FC = () => {
             maxLength={200}
             className="w-full p-3 rounded-full bg-white bg-opacity-70 text-purple-800 placeholder-purple-400"
           />
-          <div className="flex space-x-2">
+          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
             <select
               value={category}
               onChange={(e) => setCategory(e.target.value)}
@@ -218,12 +217,17 @@ const WishCreator: React.FC = () => {
               <option value="relationships">Relationships</option>
               <option value="other">Other</option>
             </select>
-            <button
-              onClick={() => setIsPrivate(!isPrivate)}
-              className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600 text-white' : 'bg-white bg-opacity-70 text-purple-800'}`}
-            >
-              <Lock size={20} />
-            </button>
+            <div className="flex items-center space-x-2">
+              <button
+                onClick={() => setIsPrivate(!isPrivate)}
+                className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600 text-white' : 'bg-white bg-opacity-70 text-purple-800'}`}
+              >
+                {isPrivate ? <Lock size={20} /> : <Globe size={20} />}
+              </button>
+              <span className="text-sm text-purple-800">
+                {isPrivate ? "Private" : "Public"}
+              </span>
+            </div>
             <button
               onClick={createWish}
               className="bg-purple-600 text-white px-4 py-2 rounded-full"
@@ -234,12 +238,20 @@ const WishCreator: React.FC = () => {
         </div>
       </main>
       
-      <footer className="flex justify-center space-x-4 mt-6">
-        <button onClick={blowWishes} className="bg-purple-600 text-white px-6 py-2 rounded-full flex items-center">
+      <div className="text-center mb-4 text-purple-800">
+        <p>
+          {isPrivate 
+            ? "Your wish will be kept private and only visible to you." 
+            : "Your wish will be visible in the public Wish Garden for others to support. You can toggle to make it private."}
+        </p>
+      </div>
+
+      <footer className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
+        <button onClick={blowWishes} className="bg-purple-600 text-white px-6 py-2 rounded-full flex items-center justify-center">
           <Wind className="mr-2" /> Blow Wishes
         </button>
         <Link href="/global-garden">
-          <a className="bg-teal-500 text-white px-6 py-2 rounded-full flex items-center">
+          <a className="bg-teal-500 text-white px-6 py-2 rounded-full flex items-center justify-center">
             <Flower className="mr-2" /> Wish Garden
           </a>
         </Link>
@@ -259,7 +271,7 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish }) => {
 
   return (
     <div
-      className={`absolute w-16 h-16 ${randomColor} rounded-full flex items-center justify-center cursor-move transition-all duration-300 hover:scale-110 shadow-lg`}
+      className={`absolute w-12 h-12 sm:w-16 sm:h-16 ${randomColor} rounded-full flex items-center justify-center cursor-move transition-all duration-300 hover:scale-110 shadow-lg`}
       style={{
         left: `${wish.x}%`,
         top: `${wish.y}%`,
@@ -284,7 +296,7 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish }) => {
           </button>
         </div>
       </div>
-      <span className="text-2xl">🌟</span>
+      <span className="text-xl sm:text-2xl">🌟</span>
     </div>
   );
 };
