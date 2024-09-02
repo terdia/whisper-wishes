@@ -65,7 +65,10 @@ const WishCreator: React.FC = () => {
       category: category,
       is_private: isPrivate,
       created_at: new Date().toISOString(),
-      id: '' // Initialize with an empty string 
+      id: '', // Initialize with an empty string
+      x: Math.random() * 60 + 20, // Random x position
+      y: Math.random() * 40 + 30, // Random y position
+      is_visible: true // Default to true
     };
 
     if (user) {
@@ -87,8 +90,8 @@ const WishCreator: React.FC = () => {
         return;
       }
 
-      newWish.id = data.id; 
-
+      newWish.id = data.id;
+      
       // Fetch updated statistics
       await fetchUserStatistics();
     } else {
