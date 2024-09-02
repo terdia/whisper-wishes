@@ -14,7 +14,7 @@ import {
   Legend,
 } from 'chart.js';
 
-import { Camera, Edit2 } from 'lucide-react';
+import { Camera, Edit2, Award, Lock } from 'lucide-react';
 
 ChartJS.register(
   CategoryScale,
@@ -42,12 +42,14 @@ const Profile = () => {
   const [modalMessage, setModalMessage] = useState('');
   // New state for toggling edit mode
   const [isEditing, setIsEditing] = useState(false);
+  const [achievements, setAchievements] = useState([]);
 
   useEffect(() => {
     if (user) {
       fetchUserProfile();
       fetchUserStats();
       fetchActivityData();
+      fetchAllAchievements();
     }
   }, [user]);
 
@@ -83,6 +85,73 @@ const Profile = () => {
       })
     }
   }
+
+  const AchievementCard = ({ achievement }) => (
+    <div 
+      className={`relative overflow-hidden bg-white rounded-lg shadow-md transition-all duration-300 ${
+        achievement.earned ? 'border-2 border-indigo-500 transform hover:scale-105' : 'border border-gray-200 opacity-60 hover:opacity-80'
+      }`}
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-center mb-4">
+          {achievement.earned ? (
+            <Award className="text-indigo-500" size={48} />
+          ) : (
+            <Lock className="text-gray-400" size={48} />
+          )}
+        </div>
+        <h3 className="text-xl font-semibold text-center mb-2 text-gray-800">{achievement.name}</h3>
+        <p className="text-gray-600 text-center text-sm">{achievement.description}</p>
+        {achievement.earned && (
+          <p className="text-indigo-500 text-center text-xs mt-4 font-semibold">
+            Earned on {new Date(achievement.earned_at).toLocaleDateString()}
+          </p>
+        )}
+      </div>
+      {achievement.earned && (
+        <div className="absolute top-0 right-0 bg-indigo-500 text-white px-2 py-1 text-xs font-bold rounded-bl">
+          Earned
+        </div>
+      )}
+    </div>
+  );
+
+  const fetchAllAchievements = async () => {
+    if (!user) return;
+    
+    // Fetch all achievements
+    const { data: allAchievements, error: achievementsError } = await supabase
+      .from('achievements')
+      .select('*');
+
+    if (achievementsError) {
+      console.error('Error fetching achievements:', achievementsError);
+      return;
+    }
+
+    // Fetch user's earned achievements
+    const { data: userAchievements, error: userAchievementsError } = await supabase
+      .from('user_achievements')
+      .select('achievement_id, earned_at')
+      .eq('user_id', user.id);
+
+    if (userAchievementsError) {
+      console.error('Error fetching user achievements:', userAchievementsError);
+      return;
+    }
+
+    // Combine all achievements with user's earned achievements
+    const combinedAchievements = allAchievements.map(achievement => {
+      const userAchievement = userAchievements.find(ua => ua.achievement_id === achievement.id);
+      return {
+        ...achievement,
+        earned: !!userAchievement,
+        earned_at: userAchievement ? userAchievement.earned_at : null
+      };
+    });
+
+    setAchievements(combinedAchievements);
+  };
 
   const fetchActivityData = async () => {
     if (!user) return
@@ -327,6 +396,20 @@ const Profile = () => {
             <p className="text-4xl font-bold">{stats.wishesSupported}</p>
             <p className="text-lg">Wishes Supported</p>
           </div>
+        </div>
+      </div>
+     
+      <div className="mt-12 bg-white rounded-xl shadow-lg p-8">
+        <h2 className="text-3xl font-bold mb-6 text-gray-800 border-b pb-2">Your Achievements</h2>
+        <div className="mb-4">
+          <p className="text-gray-600">
+            You've earned {achievements.filter(a => a.earned).length} out of {achievements.length} achievements. Keep going!
+          </p>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+          {achievements.map((achievement) => (
+            <AchievementCard key={achievement.id} achievement={achievement} />
+          ))}
         </div>
       </div>
 

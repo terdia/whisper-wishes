@@ -4,7 +4,7 @@ import WishCreator from '../components/WishCreator'
 
 const Home: NextPage = () => {
   return (
-    <div className="min-h-screen bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
+    <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
       <Head>
         <title>Dandy Wishes</title>
         <meta name="description" content="Make your wishes come true" />
