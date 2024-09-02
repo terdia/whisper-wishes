@@ -6,7 +6,7 @@ const Home: NextPage = () => {
   return (
     <div className="min-h-screen bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
       <Head>
-        <title>Whisper Wishes</title>
+        <title>Dandy Wishes</title>
         <meta name="description" content="Make your wishes come true" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
@@ -25,7 +25,7 @@ const Home: NextPage = () => {
 
       <footer className="bg-purple-800 text-white py-4 text-center">
         <p className="text-sm">
-          &copy; {new Date().getFullYear()} Whisper Wishes. All rights reserved.
+          &copy; {new Date().getFullYear()} Dandy Wishes. All rights reserved.
         </p>
       </footer>
     </div>
