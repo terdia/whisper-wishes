@@ -30,6 +30,7 @@ interface AuthContextType {
   fetchUserStatistics: () => Promise<void>;
   newWishNotification: string | null;
   clearNewWishNotification: () => void;
+  sendMagicLink: (email: string) => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -202,6 +203,16 @@ export const AuthProvider: React.FC = ({ children }) => {
     }
   }, [user]);
 
+  const sendMagicLink = async (email: string) => {
+    const { error } = await supabase.auth.signInWithOtp({
+      email,
+      options: {
+        emailRedirectTo: `${window.location.origin}/my-wishes`,
+      },
+    });
+    if (error) throw error;
+  }
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -215,7 +226,8 @@ export const AuthProvider: React.FC = ({ children }) => {
       userStatistics,
       fetchUserStatistics,
       newWishNotification,
-      clearNewWishNotification
+      clearNewWishNotification,
+      sendMagicLink
     }}>
       {children}
     </AuthContext.Provider>

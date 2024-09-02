@@ -64,9 +64,9 @@ export default function Login() {
             </label>
           </div>
           <div className="text-sm">
-            <Link href="/forgot-password">
+            <Link href="/magic-link">
               <a className="font-medium text-blue-600 hover:text-blue-500">
-                Forgot your password?
+                Login with Magic Link
               </a>
             </Link>
           </div>
