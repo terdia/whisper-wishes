@@ -64,15 +64,16 @@ const WishCreator: React.FC = () => {
       text: wishText,
       category: category,
       is_private: isPrivate,
-      created_at: new Date().toISOString()
+      created_at: new Date().toISOString(),
+      id: '' // Initialize with an empty string 
     };
 
     if (user) {
       // Create wish in database for authenticated users
       const { data, error } = await supabase
         .from('wishes')
-        .insert({ 
-          wish_text: wishText, 
+        .insert({
+          wish_text: wishText,
           user_id: user.id,
           category,
           is_private: isPrivate,
@@ -86,8 +87,8 @@ const WishCreator: React.FC = () => {
         return;
       }
 
-      newWish.id = data.id;
-      
+      newWish.id = data.id; 
+
       // Fetch updated statistics
       await fetchUserStatistics();
     } else {
