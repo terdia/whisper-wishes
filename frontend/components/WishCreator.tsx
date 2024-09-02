@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Wind, Flower, User, Lock, Globe } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { Wind, Flower, User, Lock, Globe, ChevronDown, PlusCircle } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Confetti from 'react-confetti';
 import { syncLocalWishes } from '../utils/wishSync';
@@ -16,6 +16,11 @@ interface Wish {
   category: string;
 }
 
+interface DraggableWishProps {
+  wish: Wish;
+  containerRef: React.RefObject<HTMLDivElement>;
+}
+
 const WishCreator: React.FC = () => {
   const [wishText, setWishText] = useState('');
   const [category, setCategory] = useState('');
@@ -26,6 +31,7 @@ const WishCreator: React.FC = () => {
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
   const [showConfetti, setShowConfetti] = useState(false);
+  const [isExpanded, setIsExpanded] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -150,121 +156,154 @@ const WishCreator: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-teal-100 to-purple-200 p-4 font-sans relative overflow-hidden">
+    <div className="min-h-[calc(100vh-26rem)] bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 p-4 font-sans relative overflow-hidden">
       {showConfetti && <Confetti />}
+     
       {/* Subtle floating dandelion seeds */}
-      {[...Array(5)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute text-gray-300 text-opacity-30 pointer-events-none"
-          style={{
-            top: `${Math.random() * 60 + 20}%`,
-            left: `${Math.random() * 60 + 20}%`,
-            fontSize: `${Math.random() * 20 + 10}px`,
-          }}
-          animate={{
-            y: [0, -30, 0],
-            x: [0, Math.random() * 30 - 15, 0],
-            rotate: [0, 360, 0],
-          }}
-          transition={{
-            duration: Math.random() * 10 + 10,
-            repeat: Infinity,
-            ease: "linear",
-          }}
-        >
-          ❁
-        </motion.div>
-      ))}
+      {[...Array(15)].map((_, i) => {
+        const isYellow = Math.random() > 0.5;
+        const colorClass = isYellow ? "text-yellow-200" : "text-gray-300";
+        
+        return (
+          <motion.div
+            key={i}
+            className={`absolute ${colorClass} text-opacity-30 pointer-events-none`}
+            style={{
+              top: `${Math.random() * 100}%`,
+              left: `${Math.random() * 100}%`,
+              fontSize: `${Math.random() * 16 + 12}px`,
+            }}
+            animate={{
+              y: [0, -30, 0],
+              x: [0, Math.random() * 30 - 15, 0],
+              rotate: [0, 360, 0],
+            }}
+            transition={{
+              duration: Math.random() * 15 + 20,
+              repeat: Infinity,
+              ease: "linear",
+            }}
+          >
+            ❁
+          </motion.div>
+        );
+      })}
 
-      <header className="flex flex-col sm:flex-row justify-between items-center mb-8">
-        <h1 className="text-3xl font-bold text-purple-800 mb-4 sm:mb-0">Every wish counts</h1>
-        <div className="flex items-center space-x-4">
-          <div className="bg-white bg-opacity-50 px-3 py-1 rounded-full text-purple-800">
+      <header className="mb-6">
+        <div className="flex justify-center items-center space-x-4">
+          <div className="bg-white bg-opacity-30 px-4 py-2 rounded-full text-white font-semibold">
             Level {level}
           </div>
-          <div className="bg-white bg-opacity-50 px-3 py-1 rounded-full text-purple-800">
+          <div className="bg-white bg-opacity-30 px-4 py-2 rounded-full text-white font-semibold">
             {xp} XP
           </div>
-          <button className="bg-white bg-opacity-50 p-2 rounded-full">
-            <User className="text-purple-800" />
+          <button className="bg-white bg-opacity-30 p-3 rounded-full">
+            <User size={24} className="text-white" />
           </button>
         </div>
       </header>
       
-      <main className="relative h-[60vh] md:h-[70vh] bg-white bg-opacity-30 rounded-lg shadow-lg overflow-hidden mb-4">
-        <div ref={containerRef} className="absolute inset-0 overflow-hidden">
+      <main className="relative bg-white bg-opacity-20 rounded-lg shadow-lg overflow-hidden mb-6">
+        <div ref={containerRef} className="h-[50vh] overflow-hidden relative">
           {wishes.map((wish) => (
-            <DraggableWish key={wish.id} wish={wish} />
+            <DraggableWish key={wish.id} wish={wish} containerRef={containerRef} />
           ))}
         </div>
         
-        <div className="absolute bottom-4 left-4 right-4 space-y-2">
-          <input 
-            type="text" 
-            value={wishText}
-            onChange={(e) => setWishText(e.target.value)}
-            placeholder="Whisper your wish..."
-            maxLength={200}
-            className="w-full p-3 rounded-full bg-white bg-opacity-70 text-purple-800 placeholder-purple-400"
-          />
-          <div className="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="flex-grow p-2 rounded-full bg-white bg-opacity-70 text-purple-800"
-            >
-               <option value="">Select category</option>
-                <option value="personal">Personal Growth</option>
-                <option value="career">Career & Education</option>
-                <option value="health">Health & Wellness</option>
-                <option value="relationships">Relationships & Family</option>
-                <option value="financial">Financial Goals</option>
-                <option value="travel">Travel & Adventure</option>
-                <option value="creativity">Creativity & Hobbies</option>
-                <option value="spiritual">Spiritual & Mindfulness</option>
-                <option value="community">Community & Social Impact</option>
-                <option value="environmental">Environmental & Sustainability</option>
-                <option value="learning">Learning & Skills</option>
-                <option value="lifestyle">Lifestyle & Home</option>
-                <option value="other">Other</option>
-            </select>
-            <div className="flex items-center space-x-2">
-              <button
-                onClick={() => setIsPrivate(!isPrivate)}
-                className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600 text-white' : 'bg-white bg-opacity-70 text-purple-800'}`}
+        <motion.div 
+          className="bg-white bg-opacity-30 backdrop-blur-sm p-4 rounded-t-2xl absolute bottom-0 left-0 right-0"
+          initial={false}
+          animate={{ height: isExpanded ? 'auto' : '60px' }}
+        >
+          <button 
+            className="absolute top-2 left-1/2 transform -translate-x-1/2 flex flex-col items-center"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <ChevronDown 
+              size={24} 
+              className={`text-gray-800 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+            />
+            <span className="text-white text-sm mt-1">
+              {isExpanded ? "Hide" : "Create a Wish"}
+            </span>
+          </button>
+          <AnimatePresence>
+            {isExpanded && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="pt-10"
               >
-                {isPrivate ? <Lock size={20} /> : <Globe size={20} />}
-              </button>
-              <span className="text-sm text-purple-800">
-                {isPrivate ? "Private" : "Public"}
-              </span>
-            </div>
-            <button
-              onClick={createWish}
-              className="bg-purple-600 text-white px-4 py-2 rounded-full"
-            >
-              Make a Wish
-            </button>
-          </div>
-        </div>
+                <input 
+                  type="text" 
+                  value={wishText}
+                  onChange={(e) => setWishText(e.target.value)}
+                  placeholder="Whisper your wish..."
+                  maxLength={200}
+                  className="w-full p-3 rounded-full bg-white bg-opacity-50 placeholder-gray-600 mb-3 text-gray-800"
+                />
+                <select
+                  value={category}
+                  onChange={(e) => setCategory(e.target.value)}
+                  className="w-full p-3 rounded-full bg-white bg-opacity-50 mb-3 text-gray-800"
+                >
+                  <option value="">Select category</option>
+                  <option value="personal">Personal Growth</option>
+                  <option value="career">Career & Education</option>
+                  <option value="health">Health & Wellness</option>
+                  <option value="relationships">Relationships & Family</option>
+                  <option value="financial">Financial Goals</option>
+                  <option value="travel">Travel & Adventure</option>
+                  <option value="creativity">Creativity & Hobbies</option>
+                  <option value="spiritual">Spiritual & Mindfulness</option>
+                  <option value="community">Community & Social Impact</option>
+                  <option value="environmental">Environmental & Sustainability</option>
+                  <option value="learning">Learning & Skills</option>
+                  <option value="lifestyle">Lifestyle & Home</option>
+                  <option value="other">Other</option>
+                </select>
+                <div className="flex items-center justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    <button
+                      onClick={() => setIsPrivate(!isPrivate)}
+                      className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600' : 'bg-white bg-opacity-50'}`}
+                    >
+                      {isPrivate ? <Lock size={20} className="text-white" /> : <Globe size={20} className="text-gray-800" />}
+                    </button>
+                    <span className="text-sm text-gray-800 font-semibold">
+                      {isPrivate ? "Private" : "Public"}
+                    </span>
+                  </div>
+                  <button
+                    onClick={createWish}
+                    className="bg-purple-600 px-4 py-2 rounded-full text-white font-semibold flex items-center"
+                  >
+                    <PlusCircle size={20} className="mr-2" />
+                    Make a Wish
+                  </button>
+                </div>
+                <p className="text-sm text-center text-gray-800">
+                  {isPrivate 
+                    ? "Your wish will be kept private and only visible to you. Toggle to make it public." 
+                    : "Your wish will be visible in the public Wish Garden for others to support. Toggle to make it private."}
+                </p>
+              </motion.div>
+            )}
+          </AnimatePresence>
+        </motion.div>
       </main>
-      
-      <div className="text-center mb-4 text-purple-800">
-        <p>
-          {isPrivate 
-            ? "Your wish will be kept private and only visible to you." 
-            : "Your wish will be visible in the public Wish Garden for others to support. You can toggle to make it private."}
-        </p>
-      </div>
 
-      <footer className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-4">
-        <button onClick={blowWishes} className="bg-purple-600 text-white px-6 py-2 rounded-full flex items-center justify-center">
+      <footer className="flex flex-col space-y-3 mt-4">
+        <button 
+          onClick={blowWishes} 
+          className="bg-white bg-opacity-30 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-opacity-40 transition-all"
+        >
           <Wind className="mr-2" /> Blow Wishes
         </button>
         <Link href="/global-garden">
-          <a className="bg-teal-500 text-white px-6 py-2 rounded-full flex items-center justify-center">
-            <Flower className="mr-2" /> Wish Garden
+          <a className="bg-white bg-opacity-30 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-opacity-40 transition-all">
+            <Flower className="mr-2" /> Go to Wish Garden
           </a>
         </Link>
       </footer>
@@ -272,44 +311,67 @@ const WishCreator: React.FC = () => {
   );
 };
 
-interface DraggableWishProps {
-  wish: Wish;
-}
-
-const DraggableWish: React.FC<DraggableWishProps> = ({ wish }) => {
+const DraggableWish: React.FC<DraggableWishProps> = ({ wish, containerRef }) => {
   const [isHovered, setIsHovered] = useState(false);
   const colors = ['bg-yellow-300', 'bg-pink-300', 'bg-blue-300', 'bg-green-300', 'bg-purple-300'];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
+  const [position, setPosition] = useState({ x: wish.x, y: wish.y });
+
+  useEffect(() => {
+    if (containerRef.current) {
+      const container = containerRef.current;
+      const updatePosition = () => {
+        const newX = Math.random() * (container.offsetWidth - 64); // 64 is the width of the wish
+        const newY = Math.random() * (container.offsetHeight - 64); // 64 is the height of the wish
+        setPosition({ x: newX, y: newY });
+      };
+
+      updatePosition();
+      window.addEventListener('resize', updatePosition);
+      return () => window.removeEventListener('resize', updatePosition);
+    }
+  }, [containerRef]);
+
   return (
-    <div
-      className={`absolute w-12 h-12 sm:w-16 sm:h-16 ${randomColor} rounded-full flex items-center justify-center cursor-move transition-all duration-300 hover:scale-110 shadow-lg`}
+    <motion.div
+      className={`absolute w-16 h-16 ${randomColor} rounded-full flex items-center justify-center cursor-move shadow-lg`}
       style={{
-        left: `${wish.x}%`,
-        top: `${wish.y}%`,
-        transform: `rotate(${Math.random() * 360}deg)`,
+        left: position.x,
+        top: position.y,
       }}
-      onMouseEnter={() => setIsHovered(true)}
-      onMouseLeave={() => setIsHovered(false)}
+      drag
+      dragMomentum={false}
+      whileHover={{ scale: 1.1 }}
+      whileDrag={{ scale: 1.1 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
     >
-      <div className={`absolute w-48 bg-white border-2 border-gray-200 rounded-lg p-2 shadow-xl transition-opacity duration-300 ${isHovered ? 'opacity-100' : 'opacity-0'}`}
-           style={{
-             left: '50%',
-             bottom: '120%',
-             transform: 'translateX(-50%)',
-             pointerEvents: isHovered ? 'auto' : 'none',
-           }}>
-        <p className="text-gray-800 text-sm font-medium mb-2">{wish.text}</p>
-        <div className="text-xs text-gray-500 mt-1">Category: {wish.category}</div>
-        <div className="mt-2 flex justify-between items-center">
-          <span className="text-xs text-purple-600">✨ +5 XP</span>
-          <button className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600 transition-colors duration-200">
-            Support
-          </button>
-        </div>
-      </div>
-      <span className="text-xl sm:text-2xl">🌟</span>
-    </div>
+      <span className="text-2xl">🌟</span>
+
+      {isHovered && (
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: 10 }}
+          className="absolute w-48 bg-white rounded-lg p-2 shadow-xl z-10"
+          style={{
+            left: '50%',
+            bottom: '120%',
+            transform: 'translateX(-50%)',
+          }}
+        >
+          <p className="text-gray-800 text-sm font-medium mb-2">{wish.text}</p>
+          <div className="text-xs text-gray-500 mt-1">Category: {wish.category}</div>
+          <div className="mt-2 flex justify-between items-center">
+            <span className="text-xs text-purple-600">✨ +5 XP</span>
+            <button className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600 transition-colors duration-200">
+              Support
+            </button>
+          </div>
+        </motion.div>
+      )}
+    </motion.div>
   );
 };
 
