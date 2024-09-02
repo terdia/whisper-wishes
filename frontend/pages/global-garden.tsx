@@ -47,11 +47,11 @@ const categoryColors: CategoryColors = {
 
 interface DandelionProps {
   wish: Wish;
-  onSupport: (wishId: string) => void;
+  onWater: (wishId: string) => void;
   onClick: () => void;
 }
 
-const Dandelion: React.FC<DandelionProps> = ({ wish, onSupport, onClick }) => {
+const Dandelion: React.FC<DandelionProps> = ({ wish, onWater, onClick }) => {
   const { user } = useAuth();
   const seedCount = Math.min(Math.max(wish.support_count, 5), 20);
   const seeds = Array(seedCount).fill(0);
@@ -59,7 +59,7 @@ const Dandelion: React.FC<DandelionProps> = ({ wish, onSupport, onClick }) => {
 
   return (
     <motion.div
-      className="relative w-48 h-48 m-3 cursor-pointer bg-white rounded-lg shadow-lg overflow-hidden"
+      className="relative w-48 h-48 m-3 cursor-pointer bg-white rounded-lg shadow-lg overflow-hidden group"
       whileHover={{ scale: 1.05 }}
       onClick={onClick}
     >
@@ -86,7 +86,7 @@ const Dandelion: React.FC<DandelionProps> = ({ wish, onSupport, onClick }) => {
         whileHover={{ scale: 1.1 }}
         onClick={(e) => {
           e.stopPropagation();
-          onSupport(wish.id);
+          onWater(wish.id);
         }}
         className={`absolute bottom-2 right-2 p-2 rounded-full transition-colors group ${
           isOwnWish
@@ -97,14 +97,21 @@ const Dandelion: React.FC<DandelionProps> = ({ wish, onSupport, onClick }) => {
       >
         <Wind size={20} />
         <span className="absolute bottom-full right-0 mb-2 w-auto p-2 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-          {isOwnWish ? "Can't support own wish" : 'Support this wish'}
+          {isOwnWish ? "Can't water own wish" : 'Water this wish'}
         </span>
       </motion.button>
+      
+      {/* New info tooltip */}
+      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="bg-gray-800 text-white text-xs rounded-md p-2">
+          Click to view details
+        </div>
+      </div>
     </motion.div>
   );
 };
 
-const WishModal: React.FC<{ wish: Wish; onClose: () => void; onSupport: (wishId: string) => void }> = ({ wish, onClose, onSupport }) => {
+const WishModal: React.FC<{ wish: Wish; onClose: () => void; onWater: (wishId: string) => void }> = ({ wish, onClose, onWater }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
       <motion.div 
@@ -150,15 +157,15 @@ const WishModal: React.FC<{ wish: Wish; onClose: () => void; onSupport: (wishId:
           </div>
           <div className="flex items-center">
             <ThumbsUp className="mr-2 text-green-600" />
-            <span>Supports: {wish.support_count}</span>
+            <span>Waters: {wish.support_count}</span>
           </div>
         </div>
         <button
-          onClick={() => onSupport(wish.id)}
+          onClick={() => onWater(wish.id)}
           className="w-full bg-green-500 text-white px-4 py-2 rounded-lg hover:bg-green-600 transition-colors flex items-center justify-center"
         >
           <Wind className="mr-2" size={20} />
-          Support this Wish
+          Water this Wish
         </button>
       </motion.div>
     </div>
@@ -171,7 +178,7 @@ const GlobalWishGarden: React.FC = () => {
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [selectedCategory, setSelectedCategory] = useState<string>('');
-  const [sortOrder, setSortOrder] = useState<'newest' | 'mostSupported'>('mostSupported');
+  const [sortOrder, setSortOrder] = useState<'newest' | 'mostWatered'>('mostWatered');
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
 
   const fetchWishes = useCallback(async () => {
@@ -233,17 +240,17 @@ const GlobalWishGarden: React.FC = () => {
     }
   };
 
-  const supportWish = async (wishId: string) => {
+  const waterWish = async (wishId: string) => {
     if (!user) return;
 
-    const wishToSupport = wishes.find(w => w.id === wishId);
-    if (!wishToSupport) {
+    const wishToWater = wishes.find(w => w.id === wishId);
+    if (!wishToWater) {
       toast.error('Wish not found');
       return;
     }
 
-    if (wishToSupport.user_id === user.id) {
-      toast.error('You cannot support your own wish');
+    if (wishToWater.user_id === user.id) {
+      toast.error('You cannot water your own wish');
       return;
     }
 
@@ -254,13 +261,13 @@ const GlobalWishGarden: React.FC = () => {
       if (error) throw error;
 
       if (data) {
-        toast.success('Wish supported successfully!');
+        toast.success('Wish watered successfully!');
       } else {
-        toast.error('You have already supported this wish');
+        toast.error('You have already watered this wish');
       }
     } catch (error) {
-      console.error('Error supporting wish:', error);
-      toast.error('Failed to support wish');
+      console.error('Error watering wish:', error);
+      toast.error('Failed to water wish');
     }
   };
 
@@ -310,10 +317,10 @@ const GlobalWishGarden: React.FC = () => {
         </select>
         <select
           value={sortOrder}
-          onChange={(e) => setSortOrder(e.target.value as 'newest' | 'mostSupported')}
+          onChange={(e) => setSortOrder(e.target.value as 'newest' | 'mostWatered')}
           className="flex-grow sm:flex-grow-0 p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500"
         >
-          <option value="mostSupported">Most Supported</option>
+          <option value="mostWatered">Most Watered</option>
           <option value="newest">Newest</option>
         </select>
       </div>
@@ -323,7 +330,7 @@ const GlobalWishGarden: React.FC = () => {
           <Dandelion 
             key={wish.id} 
             wish={wish} 
-            onSupport={supportWish}
+            onWater={waterWish}
             onClick={() => setSelectedWish(wish)}
           />
         ))}
@@ -341,7 +348,7 @@ const GlobalWishGarden: React.FC = () => {
           <WishModal 
             wish={selectedWish} 
             onClose={() => setSelectedWish(null)}
-            onSupport={supportWish}
+            onWater={waterWish}
           />
         )}
       </AnimatePresence>
