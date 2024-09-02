@@ -91,7 +91,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
       <div className="flex items-center justify-center min-h-screen bg-gray-100">
         <div className="text-center">
           <Loader2 className="h-10 w-10 animate-spin text-purple-600 mx-auto" />
-          <p className="mt-2 text-gray-600">Loading Whisper Wishes...</p>
+          <p className="mt-2 text-gray-600">Loading Dandy Wishes...</p>
         </div>
       </div>
     );
@@ -125,7 +125,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                       </g>
                     </g>
                     
-                    <text x="42" y="33" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="bold" fill="url(#grad)">Whisper Wishes</text>
+                    <text x="42" y="33" fontFamily="Arial, sans-serif" fontSize="24" fontWeight="bold" fill="url(#grad)">Dandy Wishes</text>
                   </svg>     
                 </a>
               </Link>

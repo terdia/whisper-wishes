@@ -1,7 +1,7 @@
 {
   "name": "whisper-wishes-frontend",
   "version": "1.0.0",
-  "description": "Frontend for Whisper Wishes app",
+  "description": "Frontend for Dandy Wishes app",
   "scripts": {
     "dev": "next dev",
     "build": "next build",
