@@ -49,7 +49,7 @@ const Dandelion: React.FC<{ wish: Wish; onWater: (wishId: string) => void; onCli
 
   return (
     <motion.div
-      className="relative w-48 h-48 m-2 cursor-pointer bg-white rounded-lg shadow-lg overflow-hidden group"
+      className="relative w-full sm:w-48 h-48 m-2 cursor-pointer bg-white rounded-lg shadow-lg overflow-hidden group"
       whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" }}
       onClick={onClick}
     >
@@ -92,6 +92,13 @@ const Dandelion: React.FC<{ wish: Wish; onWater: (wishId: string) => void; onCli
           {isOwnWish ? "Can't water own wish" : 'Water this wish'}
         </span>
       </motion.button>
+
+       {/* info tooltip */}
+       <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+        <div className="bg-gray-800 text-white text-xs rounded-md p-2">
+          Click to view details
+        </div>
+      </div>
     </motion.div>
   );
 };
@@ -206,33 +213,23 @@ const GlobalWishGarden: React.FC = () => {
   useEffect(() => {
     if (user) {
       fetchWishes();
-      const wishesSubscription = supabase
-        .channel('public:wishes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'wishes' }, handleWishUpdate)
-        .subscribe();
-
-      return () => {
-        supabase.removeChannel(wishesSubscription);
-      };
     }
   }, [user, fetchWishes]);
 
-  const handleWishUpdate = (payload: any) => {
-    if (payload.eventType === 'UPDATE') {
-      setWishes(currentWishes => 
-        currentWishes.map(wish => 
-          wish.id === payload.new.id ? { ...wish, ...payload.new } : wish
-        ).sort((a, b) => b.support_count - a.support_count)
-      );
-    } else if (payload.eventType === 'INSERT') {
-      setWishes(currentWishes => 
-        [...currentWishes, payload.new as Wish]
-          .sort((a, b) => b.support_count - a.support_count)
-      );
-    } else if (payload.eventType === 'DELETE') {
-      setWishes(currentWishes => currentWishes.filter(wish => wish.id !== payload.old.id));
-    }
-  };
+  useEffect(() => {
+    setCurrentPage(1); // Reset to first page when search term or category changes
+  }, [searchTerm, selectedCategory]);
+
+  const filteredWishes = wishes.filter(wish => 
+    wish.wish_text.toLowerCase().includes(searchTerm.toLowerCase()) &&
+    (selectedCategory === '' || wish.category === selectedCategory)
+  );
+
+  const pageCount = Math.ceil(filteredWishes.length / wishesPerPage);
+  const currentWishes = filteredWishes.slice(
+    (currentPage - 1) * wishesPerPage,
+    currentPage * wishesPerPage
+  );
 
   const waterWish = async (wishId: string) => {
     if (!user) return;
@@ -256,6 +253,10 @@ const GlobalWishGarden: React.FC = () => {
 
       if (data) {
         toast.success('Wish watered successfully!');
+        // Update the local state to reflect the change
+        setWishes(wishes.map(w => 
+          w.id === wishId ? { ...w, support_count: w.support_count + 1 } : w
+        ));
       } else {
         toast.error('You have already watered this wish');
       }
@@ -264,17 +265,6 @@ const GlobalWishGarden: React.FC = () => {
       toast.error('Failed to water wish');
     }
   };
-
-  const filteredWishes = wishes.filter(wish => 
-    wish.wish_text.toLowerCase().includes(searchTerm.toLowerCase()) &&
-    (selectedCategory === '' || wish.category === selectedCategory)
-  );
-
-  const pageCount = Math.ceil(filteredWishes.length / wishesPerPage);
-  const currentWishes = filteredWishes.slice(
-    (currentPage - 1) * wishesPerPage,
-    currentPage * wishesPerPage
-  );
 
   if (!user) {
     return <UnauthenticatedUserPrompt />;
@@ -289,11 +279,11 @@ const GlobalWishGarden: React.FC = () => {
   }
 
   return (
-    <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-br from-green-400 to-blue-500 p-8">
+    <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-br from-green-400 to-blue-500 p-4 sm:p-8">
       <motion.h1 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="text-4xl font-bold mb-8 text-white text-center"
+        className="text-3xl sm:text-4xl font-bold mb-6 sm:mb-8 text-white text-center"
       >
         Global Wish Garden
       </motion.h1>
@@ -301,7 +291,7 @@ const GlobalWishGarden: React.FC = () => {
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="mb-8 flex flex-wrap gap-4 justify-center items-center"
+        className="mb-6 sm:mb-8 flex flex-wrap gap-4 justify-center items-center"
       >
         <div className="relative flex-grow max-w-xl w-full sm:w-auto">
           <input
@@ -316,7 +306,7 @@ const GlobalWishGarden: React.FC = () => {
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="flex-grow sm:flex-grow-0 p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500 bg-white bg-opacity-80"
+          className="w-full sm:w-auto p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500 bg-white bg-opacity-80"
         >
           <option value="">All Categories</option>
           {Object.keys(categoryColors).map(category => (
@@ -328,7 +318,7 @@ const GlobalWishGarden: React.FC = () => {
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value as 'newest' | 'mostWatered')}
-          className="flex-grow sm:flex-grow-0 p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500 bg-white bg-opacity-80"
+          className="w-full sm:w-auto p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500 bg-white bg-opacity-80"
         >
           <option value="mostWatered">Most Watered</option>
           <option value="newest">Newest</option>
@@ -339,9 +329,9 @@ const GlobalWishGarden: React.FC = () => {
         initial={{ opacity: 0 }}
         animate={{ opacity: 1 }}
         transition={{ staggerChildren: 0.1 }}
-        className="flex flex-wrap justify-center"
+        className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4"
       >
-        {filteredWishes.map(wish => (
+        {currentWishes.map(wish => (
           <motion.div
             key={wish.id}
             initial={{ opacity: 0, scale: 0.9 }}
@@ -437,7 +427,7 @@ const GlobalWishGarden: React.FC = () => {
         whileHover={{ scale: 1.1 }}
         whileTap={{ scale: 0.9 }}
         onClick={() => {/* Toggle filter menu */}}
-    >
+      >
         <Filter size={24} />
       </motion.button>
     </div>
