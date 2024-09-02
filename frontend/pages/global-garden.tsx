@@ -4,7 +4,7 @@ import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
 import { toast } from 'react-toastify';
-import { Loader2, Search, Wind, Info, User, X, Calendar, ThumbsUp } from 'lucide-react';
+import { Loader2, Search, Wind, Info, User, X, Calendar, ThumbsUp, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 
 interface UserProfile {
   id: string;
@@ -25,11 +25,7 @@ interface Wish {
   user_profile: UserProfile;
 }
 
-interface CategoryColors {
-  [key: string]: string;
-}
-
-const categoryColors: CategoryColors = {
+const categoryColors: { [key: string]: string } = {
   personal: '#FFB3BA',
   career: '#BAFFC9',
   health: '#BAE1FF',
@@ -45,13 +41,7 @@ const categoryColors: CategoryColors = {
   other: '#CCE2CB'
 };
 
-interface DandelionProps {
-  wish: Wish;
-  onWater: (wishId: string) => void;
-  onClick: () => void;
-}
-
-const Dandelion: React.FC<DandelionProps> = ({ wish, onWater, onClick }) => {
+const Dandelion: React.FC<{ wish: Wish; onWater: (wishId: string) => void; onClick: () => void }> = ({ wish, onWater, onClick }) => {
   const { user } = useAuth();
   const seedCount = Math.min(Math.max(wish.support_count, 5), 20);
   const seeds = Array(seedCount).fill(0);
@@ -59,12 +49,14 @@ const Dandelion: React.FC<DandelionProps> = ({ wish, onWater, onClick }) => {
 
   return (
     <motion.div
-      className="relative w-48 h-48 m-3 cursor-pointer bg-white rounded-lg shadow-lg overflow-hidden group"
-      whileHover={{ scale: 1.05 }}
+      className="relative w-48 h-48 m-2 cursor-pointer bg-white rounded-lg shadow-lg overflow-hidden group"
+      whileHover={{ scale: 1.05, boxShadow: "0px 10px 20px rgba(0,0,0,0.1)" }}
       onClick={onClick}
     >
-      <div className="absolute inset-0 flex items-center justify-center p-4" style={{ background: `${categoryColors[wish.category]}50` }}>
-        <div className="text-sm text-center overflow-hidden max-h-full">{wish.wish_text}</div>
+      <div className="absolute inset-0 flex items-center justify-center p-4" style={{ background: `${categoryColors[wish.category]}80` }}>
+        <div className="text-sm text-center overflow-hidden max-h-full font-semibold text-gray-800">
+          {wish.wish_text.length > 100 ? `${wish.wish_text.substring(0, 100)}...` : wish.wish_text}
+        </div>
       </div>
       {seeds.map((_, index) => (
         <motion.div
@@ -95,30 +87,30 @@ const Dandelion: React.FC<DandelionProps> = ({ wish, onWater, onClick }) => {
         }`}
         disabled={isOwnWish}
       >
-        <Wind size={20} />
+        <Wind size={16} />
         <span className="absolute bottom-full right-0 mb-2 w-auto p-2 bg-gray-800 text-white text-xs rounded-md opacity-0 group-hover:opacity-100 transition-opacity duration-300">
           {isOwnWish ? "Can't water own wish" : 'Water this wish'}
         </span>
       </motion.button>
-      
-      {/* New info tooltip */}
-      <div className="absolute top-2 left-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-        <div className="bg-gray-800 text-white text-xs rounded-md p-2">
-          Click to view details
-        </div>
-      </div>
     </motion.div>
   );
 };
 
 const WishModal: React.FC<{ wish: Wish; onClose: () => void; onWater: (wishId: string) => void }> = ({ wish, onClose, onWater }) => {
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+    <motion.div 
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+      onClick={onClose}
+    >
       <motion.div 
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         className="bg-white rounded-lg p-6 max-w-lg w-full shadow-xl"
+        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-green-800">Wish Details</h2>
@@ -127,7 +119,7 @@ const WishModal: React.FC<{ wish: Wish; onClose: () => void; onWater: (wishId: s
           </button>
         </div>
         <div className="mb-4 p-4 bg-green-50 rounded-lg">
-          <p className="text-lg italic">&ldquo;{wish.wish_text}&rdquo;</p>
+          <p className="text-lg italic text-gray-800">&ldquo;{wish.wish_text}&rdquo;</p>
         </div>
         <div className="flex items-center mb-4">
           {wish.user_profile.is_public ? (
@@ -141,23 +133,23 @@ const WishModal: React.FC<{ wish: Wish; onClose: () => void; onWater: (wishId: s
               ) : (
                 <User className="w-10 h-10 mr-2 text-green-600" />
               )}
-              <span className="font-semibold">By: {wish.user_profile.username || 'Anonymous'}</span>
+              <span className="font-semibold text-gray-800">By: {wish.user_profile.username || 'Anonymous'}</span>
             </>
           ) : (
             <>
               <User className="w-10 h-10 mr-2 text-green-600" />
-              <span className="font-semibold">By: Anonymous User</span>
+              <span className="font-semibold text-gray-800">By: Anonymous User</span>
             </>
           )}
         </div>
         <div className="grid grid-cols-2 gap-4 mb-6">
           <div className="flex items-center">
             <Calendar className="mr-2 text-green-600" />
-            <span>Category: {wish.category}</span>
+            <span className="text-gray-800">Category: {wish.category}</span>
           </div>
           <div className="flex items-center">
             <ThumbsUp className="mr-2 text-green-600" />
-            <span>Waters: {wish.support_count}</span>
+            <span className="text-gray-800">Waters: {wish.support_count}</span>
           </div>
         </div>
         <button
@@ -168,7 +160,7 @@ const WishModal: React.FC<{ wish: Wish; onClose: () => void; onWater: (wishId: s
           Water this Wish
         </button>
       </motion.div>
-    </div>
+    </motion.div>
   );
 };
 
@@ -180,6 +172,8 @@ const GlobalWishGarden: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('');
   const [sortOrder, setSortOrder] = useState<'newest' | 'mostWatered'>('mostWatered');
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const wishesPerPage = 12;
 
   const fetchWishes = useCallback(async () => {
     setIsLoading(true);
@@ -276,37 +270,53 @@ const GlobalWishGarden: React.FC = () => {
     (selectedCategory === '' || wish.category === selectedCategory)
   );
 
+  const pageCount = Math.ceil(filteredWishes.length / wishesPerPage);
+  const currentWishes = filteredWishes.slice(
+    (currentPage - 1) * wishesPerPage,
+    currentPage * wishesPerPage
+  );
+
   if (!user) {
     return <UnauthenticatedUserPrompt />;
   }
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-screen bg-green-100">
-        <Loader2 className="h-10 w-10 animate-spin text-green-600" />
+      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-400 to-blue-500">
+        <Loader2 className="h-12 w-12 animate-spin text-white" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-[calc(100vh-8rem)] bg-gradient-to-b from-green-100 to-blue-100 p-8">
-      <h1 className="text-4xl font-bold mb-8 text-green-800 text-center">Global Wish Garden</h1>
+    <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-br from-green-400 to-blue-500 p-8">
+      <motion.h1 
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="text-4xl font-bold mb-8 text-white text-center"
+      >
+        Global Wish Garden
+      </motion.h1>
       
-      <div className="mb-8 flex flex-wrap gap-4 justify-center items-center">
+      <motion.div 
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="mb-8 flex flex-wrap gap-4 justify-center items-center"
+      >
         <div className="relative flex-grow max-w-xl w-full sm:w-auto">
           <input
             type="text"
             placeholder="Search wishes..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full p-3 pl-10 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500"
+            className="w-full p-3 pl-10 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500 bg-white bg-opacity-80"
           />
-          <Search className="absolute left-3 top-3.5 text-green-400" size={20} />
+          <Search className="absolute left-3 top-3.5 text-green-500" size={20} />
         </div>
         <select
           value={selectedCategory}
           onChange={(e) => setSelectedCategory(e.target.value)}
-          className="flex-grow sm:flex-grow-0 p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500"
+          className="flex-grow sm:flex-grow-0 p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500 bg-white bg-opacity-80"
         >
           <option value="">All Categories</option>
           {Object.keys(categoryColors).map(category => (
@@ -318,28 +328,66 @@ const GlobalWishGarden: React.FC = () => {
         <select
           value={sortOrder}
           onChange={(e) => setSortOrder(e.target.value as 'newest' | 'mostWatered')}
-          className="flex-grow sm:flex-grow-0 p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500"
+          className="flex-grow sm:flex-grow-0 p-3 rounded-full border-2 border-green-300 focus:outline-none focus:border-green-500 bg-white bg-opacity-80"
         >
           <option value="mostWatered">Most Watered</option>
           <option value="newest">Newest</option>
         </select>
-      </div>
+      </motion.div>
 
-      <div className="flex flex-wrap justify-center">
+      <motion.div 
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ staggerChildren: 0.1 }}
+        className="flex flex-wrap justify-center"
+      >
         {filteredWishes.map(wish => (
-          <Dandelion 
-            key={wish.id} 
-            wish={wish} 
-            onWater={waterWish}
-            onClick={() => setSelectedWish(wish)}
-          />
+          <motion.div
+            key={wish.id}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <Dandelion 
+              wish={wish} 
+              onWater={waterWish}
+              onClick={() => setSelectedWish(wish)}
+            />
+          </motion.div>
         ))}
-      </div>
+      </motion.div>
 
       {filteredWishes.length === 0 && (
-        <div className="text-center text-gray-500 mt-8">
+        <motion.div 
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center text-white mt-8"
+        >
           <Info size={48} className="mx-auto mb-4" />
-          <p>No wishes found. Try adjusting your search or filters.</p>
+          <p className="text-xl">No wishes found. Try adjusting your search or filters.</p>
+        </motion.div>
+      )}
+
+      {/* Pagination */}
+      {pageCount > 1 && (
+        <div className="flex justify-center items-center mt-8 space-x-4">
+          <button
+            onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
+            disabled={currentPage === 1}
+            className="bg-white text-green-600 rounded-full p-2 shadow-lg disabled:opacity-50"
+          >
+            <ChevronLeft size={24} />
+          </button>
+          <span className="text-white font-semibold">
+            Page {currentPage} of {pageCount}
+          </span>
+          <button
+            onClick={() => setCurrentPage(prev => Math.min(prev + 1, pageCount))}
+            disabled={currentPage === pageCount}
+            className="bg-white text-green-600 rounded-full p-2 shadow-lg disabled:opacity-50"
+          >
+            <ChevronRight size={24} />
+          </button>
         </div>
       )}
 
@@ -352,6 +400,46 @@ const GlobalWishGarden: React.FC = () => {
           />
         )}
       </AnimatePresence>
+
+      {/* Floating Dandelion Seeds */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        {[...Array(20)].map((_, i) => (
+          <motion.div
+            key={i}
+            className="absolute text-white text-opacity-70 select-none"
+            initial={{ 
+              x: Math.random() * window.innerWidth, 
+              y: Math.random() * window.innerHeight,
+              scale: Math.random() * 0.5 + 0.5
+            }}
+            animate={{
+              y: [null, Math.random() * -200 - 100],
+              x: [null, Math.random() * 200 - 100],
+              rotate: [0, 360],
+            }}
+            transition={{
+              duration: Math.random() * 10 + 10,
+              repeat: Infinity,
+              repeatType: 'loop'
+            }}
+          >
+            ❁
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Garden Floor */}
+      <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-green-800 to-transparent pointer-events-none" />
+
+      {/* Filter Button for Mobile */}
+      <motion.button
+        className="fixed bottom-4 right-4 bg-white text-green-600 rounded-full p-3 shadow-lg md:hidden"
+        whileHover={{ scale: 1.1 }}
+        whileTap={{ scale: 0.9 }}
+        onClick={() => {/* Toggle filter menu */}}
+    >
+        <Filter size={24} />
+      </motion.button>
     </div>
   );
 };
