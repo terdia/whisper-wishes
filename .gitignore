@@ -5,3 +5,5 @@ frontend/node_modules
 prompts/
 .idea/
 docker-compose.override.yml
+volumes/
+backend/
