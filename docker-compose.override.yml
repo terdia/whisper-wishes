@@ -1,0 +1,43 @@
+# docker-compose.override.yml (Development)
+services:
+  nginx: null
+
+  db:
+    ports:
+      - "5432:5432"  
+
+  kong:
+    ports:
+      - "8000:8000"
+      - "8001:8001"  
+    environment:
+      KONG_ADMIN_LISTEN: 0.0.0.0:8001
+
+  studio:
+    ports:
+      - "3001:3000"
+
+  frontend:
+    build:
+      args:
+        - NEXT_PUBLIC_SUPABASE_URL=http://kong:8000
+        - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    environment:
+      - NODE_ENV=development
+      - NEXT_PUBLIC_SUPABASE_URL=http://kong:8000
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+      - GOTRUE_JWT_SECRET=${GOTRUE_JWT_SECRET}
+    volumes:
+      - ./frontend:/app
+      - /app/node_modules
+    ports:
+      - "3000:3000"
+
+  auth:
+    environment:
+      GOTRUE_JWT_SECRET: ${GOTRUE_JWT_SECRET}
+
+  rest:
+    environment:
+      PGRST_JWT_SECRET: ${GOTRUE_JWT_SECRET}
+      PGRST_APP_SETTINGS_JWT_SECRET: ${GOTRUE_JWT_SECRET}

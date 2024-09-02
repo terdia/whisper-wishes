@@ -1,0 +1,80 @@
+_format_version: "2.1"
+
+services:
+  - name: supabase-auth
+    url: http://auth:9999
+    routes:
+      - name: auth-route
+        paths:
+          - /auth
+    plugins:
+      - name: cors
+      - name: key-auth
+
+  - name: supabase-rest
+    url: http://rest:3000
+    routes:
+      - name: rest-route
+        paths:
+          - /rest
+    plugins:
+      - name: cors
+      - name: key-auth
+
+  - name: supabase-realtime
+    url: http://realtime:4000
+    routes:
+      - name: realtime-route
+        paths:
+          - /realtime
+    plugins:
+      - name: cors
+      - name: key-auth
+
+  - name: supabase-storage
+    url: http://storage:5000
+    routes:
+      - name: storage-route
+        paths:
+          - /storage
+    plugins:
+      - name: cors
+      - name: key-auth
+
+consumers:
+  - username: anon
+    keyauth_credentials:
+      - key: ${SUPABASE_ANON_KEY}
+  - username: service_role
+    keyauth_credentials:
+      - key: ${SUPABASE_SERVICE_KEY}
+
+plugins:
+  - name: cors
+    config:
+      origins:
+        - "*"
+      methods:
+        - GET
+        - POST
+        - PUT
+        - PATCH
+        - DELETE
+        - OPTIONS
+      headers:
+        - Accept
+        - Accept-Version
+        - Content-Length
+        - Content-MD5
+        - Content-Type
+        - Date
+        - Authorization
+      exposed_headers:
+        - X-Auth-Token
+      credentials: true
+      max_age: 3600
+
+  - name: key-auth
+    config:
+      key_names:
+        - apikey
