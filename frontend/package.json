@@ -4,7 +4,7 @@
   "description": "Frontend for Dandy Wishes app",
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "if [ \"$NEXT_PUBLIC_SKIP_LINT\" != \"true\" ]; then next lint; fi && next build",
     "start": "next start",
     "lint": "next lint"
   },
