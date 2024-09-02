@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { AuthApiError } from '@supabase/supabase-js';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -17,7 +18,17 @@ export default function Login() {
       // Handle successful login (e.g., redirect to dashboard)
     } catch (error) {
       console.error('Error signing in:', error);
-      setError('An error occurred during login. Please try again.');
+      if (error instanceof AuthApiError) {
+        if (error.message === 'Email not confirmed') {
+          setError('Please verify your email address before logging in.');
+        } else if (error.message === 'Invalid login credentials') {
+          setError('Invalid email or password. Please try again.');
+        } else {
+          setError(error.message);
+        }
+      } else {
+        setError('An unexpected error occurred during login. Please try again.');
+      }
       setIsModalOpen(true);
     }
   };
