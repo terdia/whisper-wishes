@@ -27,7 +27,6 @@ interface AuthContextType {
     wishesShared: number;
     wishesSupported: number;
   };
-  fetchUserStatistics: () => Promise<void>;
   sendMagicLink: (email: string) => Promise<void>;
 }
 
@@ -170,26 +169,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     updateLocalUserProfile(data);
   }
 
-  const fetchUserStatistics = async () => {
-    if (!user) return;
-    const { data, error } = await supabase.rpc('get_user_statistics', { p_user_id: user.id });
-    if (error) {
-      console.error('Error fetching user statistics:', error);
-    } else if (data && data.length > 0) {
-      setUserStatistics({
-        totalWishes: data[0].total_wishes_made,
-        wishesShared: data[0].wishes_shared,
-        wishesSupported: data[0].wishes_supported
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchUserStatistics();
-    }
-  }, [user]);
-
   const sendMagicLink = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -211,7 +190,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateProfile, 
       isLoading,
       userStatistics,
-      fetchUserStatistics,
       sendMagicLink
     }}>
       {children}
