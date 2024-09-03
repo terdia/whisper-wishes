@@ -9,6 +9,8 @@ services:
     depends_on:
       - frontend
     restart: unless-stopped
+    networks:
+      - dandywishes_local
 
   frontend:
     container_name: frontend
@@ -22,3 +24,9 @@ services:
       - NODE_ENV=production
       - NEXT_PUBLIC_SUPABASE_URL=${SUPABASE_URL}
       - NEXT_PUBLIC_SUPABASE_ANON_KEY=${SUPABASE_ANON_KEY}
+    networks:
+      - dandywishes_local
+
+
+  networks:
+    dandywishes_local:
