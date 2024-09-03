@@ -7,3 +7,5 @@ prompts/
 docker-compose.override.yml
 volumes/
 backend/
+frontend/Dockerfile.dev
+proxy/nginx.dev.conf

@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import withAuth from '../components/withAuth';
@@ -15,6 +15,7 @@ import {
 } from 'chart.js';
 
 import { Camera, Edit2, Award, Lock } from 'lucide-react';
+import { debounce } from 'lodash';
 
 ChartJS.register(
   CategoryScale,
@@ -28,185 +29,99 @@ ChartJS.register(
 
 const Profile = () => {
   const { user, userProfile, updateProfile } = useAuth();
-  const [username, setUsername] = useState('');
-  const [bio, setBio] = useState('');
-  const [avatarUrl, setAvatarUrl] = useState('');
-  const [isPublic, setIsPublic] = useState(false);
+  const [isEditing, setIsEditing] = useState(false);
+  const [localProfile, setLocalProfile] = useState({
+    username: '',
+    bio: '',
+    avatar_url: '',
+    isPublic: false
+  });
   const [stats, setStats] = useState({
     totalWishes: 0,
     wishesShared: 0,
     wishesSupported: 0
   });
   const [activityData, setActivityData] = useState({ labels: [], datasets: [] });
+  const [achievements, setAchievements] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  // New state for toggling edit mode
-  const [isEditing, setIsEditing] = useState(false);
-  const [achievements, setAchievements] = useState([]);
+  const [dataFetched, setDataFetched] = useState(false);
 
-  useEffect(() => {
-    if (user) {
-      fetchUserProfile();
-      fetchUserStats();
-      fetchActivityData();
-      fetchAllAchievements();
-    }
-  }, [user]);
-
-  const fetchUserProfile = async () => {
-    if (!user) return;
-    const { data, error } = await supabase
-      .from('user_profiles')
-      .select('*')
-      .eq('id', user.id)
-      .single();
-
-    if (error) {
-      console.error('Error fetching user profile:', error);
-    } else if (data) {
-      setUsername(data.username || '');
-      setBio(data.bio || '');
-      setAvatarUrl(data.avatar_url || '');
-      setIsPublic(data.is_public || false);
-    }
-  };
-
-  const fetchUserStats = async () => {
-    if (!user) return
-    const { data, error } = await supabase.rpc('get_user_statistics', { p_user_id: user.id })
-    if (error) {
-      console.error('Error fetching user stats:', error)
-    } else if (data && data.length > 0) {
-      const stats = data[0]  // The RPC returns an array with one object
-      setStats({
-        totalWishes: stats.total_wishes_made,
-        wishesShared: stats.wishes_shared,
-        wishesSupported: stats.wishes_supported
-      })
-    }
+  let avatarUrl = userProfile?.avatar_url;
+  if (userProfile?.avatar_url) {
+    const fixedUrl = userProfile.avatar_url.replace(
+      /^(https:\/\/.*?\/storage\/v1\/object\/public\/avatars\/).*?(https:\/\/.*?\/storage\/v1\/object\/public\/avatars\/)/,
+      '$1'
+    );
+    avatarUrl = fixedUrl;
+  } else {
+    avatarUrl = null;
   }
 
-  const AchievementCard = ({ achievement }) => (
-    <div 
-      className={`relative overflow-hidden bg-white rounded-lg shadow-md transition-all duration-300 ${
-        achievement.earned ? 'border-2 border-indigo-500 transform hover:scale-105' : 'border border-gray-200 opacity-60 hover:opacity-80'
-      }`}
-    >
-      <div className="p-6">
-        <div className="flex items-center justify-center mb-4">
-          {achievement.earned ? (
-            <Award className="text-indigo-500" size={48} />
-          ) : (
-            <Lock className="text-gray-400" size={48} />
-          )}
-        </div>
-        <h3 className="text-xl font-semibold text-center mb-2 text-gray-800">{achievement.name}</h3>
-        <p className="text-gray-600 text-center text-sm">{achievement.description}</p>
-        {achievement.earned && (
-          <p className="text-indigo-500 text-center text-xs mt-4 font-semibold">
-            Earned on {new Date(achievement.earned_at).toLocaleDateString()}
-          </p>
-        )}
-      </div>
-      {achievement.earned && (
-        <div className="absolute top-0 right-0 bg-indigo-500 text-white px-2 py-1 text-xs font-bold rounded-bl">
-          Earned
-        </div>
-      )}
-    </div>
+  const fetchUserData = useCallback(async () => {
+    if (!user || dataFetched) return;
+
+    try {
+      const { data, error } = await supabase.rpc('get_user_profile_data', { p_user_id: user.id });
+      if (error) throw error;
+
+      // Set stats
+      setStats({
+        totalWishes: data.stats.total_wishes_made,
+        wishesShared: data.stats.wishes_shared,
+        wishesSupported: data.stats.wishes_supported
+      });
+
+      // Set activity data if it's not null
+      setActivityData(processActivityData(data.activity));
+
+      // Process and set achievements
+      const processedAchievements = data.achievements.map(achievement => {
+        const userAchievement = data.user_achievements.find(ua => ua.achievement_id === achievement.id);
+        return {
+          ...achievement,
+          earned: !!userAchievement,
+          earned_at: userAchievement ? userAchievement.earned_at : null
+        };
+      });
+      setAchievements(processedAchievements);
+
+      setDataFetched(true);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+      setModalMessage('Failed to fetch user data. Please try again.');
+      setShowModal(true);
+    }
+  }, [user, dataFetched]);
+
+  const debouncedFetchUserData = useCallback(
+    debounce(() => {
+      fetchUserData();
+    }, 300),
+    [fetchUserData]
   );
 
-  const fetchAllAchievements = async () => {
-    if (!user) return;
-    
-    // Fetch all achievements
-    const { data: allAchievements, error: achievementsError } = await supabase
-      .from('achievements')
-      .select('*');
-
-    if (achievementsError) {
-      console.error('Error fetching achievements:', achievementsError);
-      return;
+  useEffect(() => {
+    if (user && !dataFetched) {
+      debouncedFetchUserData();
     }
+  }, [user, debouncedFetchUserData, dataFetched]);
 
-    // Fetch user's earned achievements
-    const { data: userAchievements, error: userAchievementsError } = await supabase
-      .from('user_achievements')
-      .select('achievement_id, earned_at')
-      .eq('user_id', user.id);
-
-    if (userAchievementsError) {
-      console.error('Error fetching user achievements:', userAchievementsError);
-      return;
+  useEffect(() => {
+    if (user && userProfile) {
+      setLocalProfile({
+        username: userProfile.username || '',
+        bio: userProfile.bio || '',
+        avatar_url: avatarUrl,
+        isPublic: userProfile.is_public || false
+      });
     }
-
-    // Combine all achievements with user's earned achievements
-    const combinedAchievements = allAchievements.map(achievement => {
-      const userAchievement = userAchievements.find(ua => ua.achievement_id === achievement.id);
-      return {
-        ...achievement,
-        earned: !!userAchievement,
-        earned_at: userAchievement ? userAchievement.earned_at : null
-      };
-    });
-
-    setAchievements(combinedAchievements);
-  };
-
-  const fetchActivityData = async () => {
-    if (!user) return
-    const { data, error } = await supabase
-      .from('wish_activity')
-      .select('action_type, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: true })
-
-    if (error) {
-      console.error('Error fetching activity data:', error)
-    } else if (data) {
-      const groupedData = data.reduce((acc, item) => {
-        const date = new Date(item.created_at).toLocaleDateString()
-        if (!acc[date]) acc[date] = { create: 0, share: 0, support: 0 }
-        acc[date][item.action_type]++
-        return acc
-      }, {})
-
-      const labels = Object.keys(groupedData)
-      const createData = labels.map(date => groupedData[date].create)
-      const shareData = labels.map(date => groupedData[date].share)
-      const supportData = labels.map(date => groupedData[date].support)
-
-      setActivityData({
-        labels,
-        datasets: [
-          {
-            label: 'Wishes Created',
-            data: createData,
-            borderColor: 'rgb(75, 192, 192)',
-            tension: 0.1
-          },
-          {
-            label: 'Wishes Shared',
-            data: shareData,
-            borderColor: 'rgb(255, 99, 132)',
-            tension: 0.1
-          },
-          {
-            label: 'Wishes Supported',
-            data: supportData,
-            borderColor: 'rgb(54, 162, 235)',
-            tension: 0.1
-          }
-        ]
-      })
-    }
-  }
+  }, [user, userProfile, avatarUrl]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateProfile({ username, bio, avatar_url: avatarUrl, is_public: isPublic });
-      await fetchUserProfile(); 
+      await updateProfile({ username: localProfile.username, bio: localProfile.bio, avatar_url: localProfile.avatar_url, is_public: localProfile.isPublic });
       setModalMessage('Profile updated successfully!');
       setShowModal(true);
       setIsEditing(false); // Exit edit mode after successful update
@@ -242,9 +157,8 @@ const Profile = () => {
         throw new Error('Failed to get public URL');
       }
 
-      setAvatarUrl(publicUrlData.publicUrl);
+      setLocalProfile(prevProfile => ({ ...prevProfile, avatar_url: publicUrlData.publicUrl }));
       await updateProfile({ avatar_url: publicUrlData.publicUrl });
-      await fetchUserProfile();
       setModalMessage('Avatar updated successfully!');
       setShowModal(true);
     } catch (error) {
@@ -268,16 +182,113 @@ const Profile = () => {
     </div>
   );
 
+  // Helper functions to process the data
+  const processActivityData = (activityData) => {
+
+    if (!activityData || activityData.length === 0) {
+      // Return empty data structure if activityData is null or empty
+      return {
+        labels: [],
+        datasets: [
+          {
+            label: 'Wishes Created',
+            data: [],
+            borderColor: 'rgb(75, 192, 192)',
+            tension: 0.1
+          },
+          {
+            label: 'Wishes Shared',
+            data: [],
+            borderColor: 'rgb(255, 99, 132)',
+            tension: 0.1
+          },
+          {
+            label: 'Wishes Supported',
+            data: [],
+            borderColor: 'rgb(54, 162, 235)',
+            tension: 0.1
+          }
+        ]
+      };
+    }
+
+    const groupedData = activityData.reduce((acc, item) => {
+      const date = new Date(item.created_at).toLocaleDateString()
+      if (!acc[date]) acc[date] = { create: 0, share: 0, support: 0 }
+      acc[date][item.action_type]++
+      return acc
+    }, {})
+
+    const labels = Object.keys(groupedData)
+    const createData = labels.map(date => groupedData[date].create)
+    const shareData = labels.map(date => groupedData[date].share)
+    const supportData = labels.map(date => groupedData[date].support)
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: 'Wishes Created',
+          data: createData,
+          borderColor: 'rgb(75, 192, 192)',
+          tension: 0.1
+        },
+        {
+          label: 'Wishes Shared',
+          data: shareData,
+          borderColor: 'rgb(255, 99, 132)',
+          tension: 0.1
+        },
+        {
+          label: 'Wishes Supported',
+          data: supportData,
+          borderColor: 'rgb(54, 162, 235)',
+          tension: 0.1
+        }
+      ]
+    }
+  };
+
+  const AchievementCard = ({ achievement }) => (
+    <div 
+      className={`relative overflow-hidden bg-white rounded-lg shadow-md transition-all duration-300 ${
+        achievement.earned ? 'border-2 border-indigo-500 transform hover:scale-105' : 'border border-gray-200 opacity-60 hover:opacity-80'
+      }`}
+    >
+      <div className="p-6">
+        <div className="flex items-center justify-center mb-4">
+          {achievement.earned ? (
+            <Award className="text-indigo-500" size={48} />
+          ) : (
+            <Lock className="text-gray-400" size={48} />
+          )}
+        </div>
+        <h3 className="text-xl font-semibold text-center mb-2 text-gray-800">{achievement.name}</h3>
+        <p className="text-gray-600 text-center text-sm">{achievement.description}</p>
+        {achievement.earned && (
+          <p className="text-indigo-500 text-center text-xs mt-4 font-semibold">
+            Earned on {new Date(achievement.earned_at).toLocaleDateString()}
+          </p>
+        )}
+      </div>
+      {achievement.earned && (
+        <div className="absolute top-0 right-0 bg-indigo-500 text-white px-2 py-1 text-xs font-bold rounded-bl">
+          Earned
+        </div>
+      )}
+    </div>
+  );
+
   return (
     <div className="max-w-6xl mx-auto mt-8 p-6 bg-gray-50">
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
             <h1 className="text-3xl font-bold text-indigo-800">
-            {username ? `${username}'s Wishboard` : 'Your Wishboard'}
+            {localProfile.username ? `${localProfile.username}'s Wishboard` : 'Your Wishboard'}
             </h1>
             <p className="text-lg text-gray-600 mt-1">
-            {username 
-                ? `Welcome back, ${username}! Ready to make some wishes?`
+            {localProfile.username 
+                ? `Welcome back, ${localProfile.username}! Ready to make some wishes?`
                 : "Welcome to your personal space for wishes and dreams"}
             </p>
         </div>
@@ -301,8 +312,8 @@ const Profile = () => {
             <input
               type="text"
               id="username"
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
+              value={localProfile.username}
+              onChange={(e) => setLocalProfile(prevProfile => ({ ...prevProfile, username: e.target.value }))}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             />
           </div>
@@ -310,8 +321,8 @@ const Profile = () => {
             <label htmlFor="bio" className="block text-sm font-medium text-gray-700">Bio</label>
             <textarea
               id="bio"
-              value={bio}
-              onChange={(e) => setBio(e.target.value)}
+              value={localProfile.bio}
+              onChange={(e) => setLocalProfile(prevProfile => ({ ...prevProfile, bio: e.target.value }))}
               className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
               rows={3}
             ></textarea>
@@ -320,8 +331,8 @@ const Profile = () => {
             <input
               type="checkbox"
               id="isPublic"
-              checked={isPublic}
-              onChange={(e) => setIsPublic(e.target.checked)}
+              checked={localProfile.isPublic}
+              onChange={(e) => setLocalProfile(prevProfile => ({ ...prevProfile, isPublic: e.target.checked }))}
               className="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-300 focus:ring focus:ring-indigo-200 focus:ring-opacity-50"
             />
             <label htmlFor="isPublic" className="ml-2 block text-sm text-gray-900">Make profile public</label>
@@ -334,52 +345,52 @@ const Profile = () => {
         <dl className="grid grid-cols-1 gap-x-4 gap-y-6 sm:grid-cols-2">
             <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Username</dt>
-                <dd className="mt-1 text-sm text-gray-900">{username}</dd>
+                <dd className="mt-1 text-sm text-gray-900">{localProfile.username}</dd>
             </div>
             <div className="sm:col-span-1">
                 <dt className="text-sm font-medium text-gray-500">Profile Visibility</dt>
                 <dd className="mt-1 text-sm text-gray-900">
                 <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                    isPublic ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                    localProfile.isPublic ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
                 }`}>
-                    {isPublic ? 'Public' : 'Private'}
+                    {localProfile.isPublic ? 'Public' : 'Private'}
                 </span>
                 </dd>
             </div>
-            <div className="sm:col-span-2">
-                <dt className="text-sm font-medium text-gray-500">Bio</dt>
-                <dd className="mt-1 text-sm text-gray-900">{bio || 'No bio provided'}</dd>
-            </div>
-        </dl>
-      )}
-    </div>
-    <div className="flex-shrink-0 flex justify-center">
-      <div className="relative">
-        <img 
-          src={avatarUrl || 'https://www.gravatar.com/avatar/?d=mp'}
-          alt="Profile" 
-          className="w-40 h-40 rounded-full object-cover border-4 border-gray-200"
-          onError={(e) => {
-            e.currentTarget.onerror = null;
-            e.currentTarget.src = 'https://www.gravatar.com/avatar/?d=mp';
-          }}
-        />
-        {isEditing && (
-          <label htmlFor="avatar" className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer">
-            <Camera className="text-white" size={20} />
-            <input
-              type="file"
-              id="avatar"
-              accept="image/*"
-              onChange={handleAvatarUpload}
-              className="hidden"
+                <div className="sm:col-span-2">
+                    <dt className="text-sm font-medium text-gray-500">Bio</dt>
+                    <dd className="mt-1 text-sm text-gray-900">{localProfile.bio || 'No bio provided'}</dd>
+                </div>
+            </dl>
+          )}
+        </div>
+        <div className="flex-shrink-0 flex justify-center">
+          <div className="relative">
+            <img 
+              src={localProfile.avatar_url || 'https://www.gravatar.com/avatar/?d=mp'}
+              alt="Profile" 
+              className="w-40 h-40 rounded-full object-cover border-4 border-gray-200"
+              onError={(e) => {
+                e.currentTarget.onerror = null;
+                e.currentTarget.src = 'https://www.gravatar.com/avatar/?d=mp';
+              }}
             />
-          </label>
-        )}
+            {isEditing && (
+              <label htmlFor="avatar" className="absolute bottom-0 right-0 bg-blue-500 p-2 rounded-full cursor-pointer">
+                <Camera className="text-white" size={20} />
+                <input
+                  type="file"
+                  id="avatar"
+                  accept="image/*"
+                  onChange={handleAvatarUpload}
+                  className="hidden"
+                />
+              </label>
+            )}
+          </div>
+        </div>
       </div>
     </div>
-  </div>
-</div>
 
       <div className="mt-12">
         <h2 className="text-3xl font-bold mb-6 text-gray-800">Your Wish Statistics</h2>

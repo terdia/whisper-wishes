@@ -27,7 +27,7 @@ const WishCreator: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { user, fetchUserStatistics } = useAuth();
+  const { user } = useAuth();
   const [xp, setXp] = useState(0);
   const [level, setLevel] = useState(1);
   const [showConfetti, setShowConfetti] = useState(false);
@@ -97,9 +97,6 @@ const WishCreator: React.FC = () => {
       }
 
       newWish.id = data.id;
-      
-      // Fetch updated statistics
-      await fetchUserStatistics();
     } else {
       // Store wish in local storage for non-authenticated users
       const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');

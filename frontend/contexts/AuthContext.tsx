@@ -27,9 +27,6 @@ interface AuthContextType {
     wishesShared: number;
     wishesSupported: number;
   };
-  fetchUserStatistics: () => Promise<void>;
-  newWishNotification: string | null;
-  clearNewWishNotification: () => void;
   sendMagicLink: (email: string) => Promise<void>;
 }
 
@@ -49,7 +46,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     wishesShared: 0,
     wishesSupported: 0
   })
-  const [newWishNotification, setNewWishNotification] = useState<string | null>(null)
+
   const router = useRouter()
 
   useEffect(() => {
@@ -76,31 +73,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setIsLoading(false)
     })
 
-    // Set up global subscription for new public wishes
-    const wishesSubscription = supabase
-      .channel('public:wishes')
-      .on('postgres_changes', 
-        { event: 'INSERT', schema: 'public', table: 'wishes', filter: 'is_private=eq.false' },
-        handleNewPublicWish
-      )
-      .subscribe()
-
     return () => {
       subscription.unsubscribe()
-      wishesSubscription.unsubscribe()
     }
   }, [])
 
-  const handleNewPublicWish = (payload: any) => {
-    const newWish = payload.new
-    setNewWishNotification(`New wish: ${newWish.wish_text}`)
-  }
-
-  const clearNewWishNotification = () => {
-    setNewWishNotification(null)
-  }
-
-  const fetchUserProfile = async (userId: string) => {
+  const fetchUserProfile = async (userId) => {
     const { data, error } = await supabase
       .from('user_profiles')
       .select('*')
@@ -110,6 +88,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     if (error) {
       console.error('Error fetching user profile:', error);
     } else if (data) {
+      // Get the public URL for the avatar
       if (data.avatar_url) {
         const { data: publicUrlData } = supabase.storage
           .from('avatars')
@@ -118,13 +97,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       }
       setUserProfile(data);
     }
+  };
+
+  // New function to update local user profile state
+  const updateLocalUserProfile = (data: Partial<UserProfile>) => {
+    setUserProfile(prevProfile => prevProfile ? { ...prevProfile, ...data } : null);
   }
 
   const signIn = async (email: string, password: string) => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     if (data.user) {
-      await fetchUserProfile(data.user.id)
       await syncLocalWishes(data.user.id)
     }
     router.push('/my-wishes')
@@ -158,7 +141,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           throw profileError;
         }
 
-        await fetchUserProfile(data.user.id);
         await syncLocalWishes(data.user.id);
       }
       router.push('/my-wishes');
@@ -184,28 +166,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       .eq('id', user.id);
 
     if (error) throw error;
-    await fetchUserProfile(user.id); 
+    updateLocalUserProfile(data);
   }
-
-  const fetchUserStatistics = async () => {
-    if (!user) return;
-    const { data, error } = await supabase.rpc('get_user_statistics', { p_user_id: user.id });
-    if (error) {
-      console.error('Error fetching user statistics:', error);
-    } else if (data && data.length > 0) {
-      setUserStatistics({
-        totalWishes: data[0].total_wishes_made,
-        wishesShared: data[0].wishes_shared,
-        wishesSupported: data[0].wishes_supported
-      });
-    }
-  };
-
-  useEffect(() => {
-    if (user) {
-      fetchUserStatistics();
-    }
-  }, [user]);
 
   const sendMagicLink = async (email: string) => {
     const { error } = await supabase.auth.signInWithOtp({
@@ -228,9 +190,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       updateProfile, 
       isLoading,
       userStatistics,
-      fetchUserStatistics,
-      newWishNotification,
-      clearNewWishNotification,
       sendMagicLink
     }}>
       {children}

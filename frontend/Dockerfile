@@ -25,5 +25,5 @@ ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 # Use nodemon for auto-reloading
 RUN npm install -g nodemon
 
-# Start the app with nodemon for development
-CMD ["nodemon", "--watch", ".", "-e", "js,ts,jsx,tsx", "--exec", "npm", "run", "dev"]
+# Start the app
+CMD ["npm", "run", "build"] && ["npm", "start"]
