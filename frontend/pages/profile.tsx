@@ -121,7 +121,7 @@ const Profile = () => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     try {
-      await updateProfile({ username: localProfile.username, bio: localProfile.bio, avatar_url: localProfile.avatarUrl, is_public: localProfile.isPublic });
+      await updateProfile({ username: localProfile.username, bio: localProfile.bio, avatar_url: localProfile.avatar_url, is_public: localProfile.isPublic });
       setModalMessage('Profile updated successfully!');
       setShowModal(true);
       setIsEditing(false); // Exit edit mode after successful update
@@ -157,7 +157,7 @@ const Profile = () => {
         throw new Error('Failed to get public URL');
       }
 
-      setLocalProfile(prevProfile => ({ ...prevProfile, avatarUrl: publicUrlData.publicUrl }));
+      setLocalProfile(prevProfile => ({ ...prevProfile, avatar_url: publicUrlData.publicUrl }));
       await updateProfile({ avatar_url: publicUrlData.publicUrl });
       setModalMessage('Avatar updated successfully!');
       setShowModal(true);
