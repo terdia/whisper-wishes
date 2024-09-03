@@ -22,8 +22,5 @@ ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 ENV NEXT_PUBLIC_SUPABASE_URL=$NEXT_PUBLIC_SUPABASE_URL
 ENV NEXT_PUBLIC_SUPABASE_ANON_KEY=$NEXT_PUBLIC_SUPABASE_ANON_KEY
 
-# Use nodemon for auto-reloading
-RUN npm install -g nodemon
-
 # Start the app
-CMD ["npm", "run", "build"] && ["npm", "start"]
+CMD ["/bin/sh", "-c", "npm run build && npm start"]
