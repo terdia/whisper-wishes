@@ -1,6 +1,6 @@
 services:
   nginx:
-    container_name: dandywishes_proxy
+    container_name: proxy
     image: nginx:latest
     ports:
       - "80:80"
@@ -11,7 +11,7 @@ services:
     restart: unless-stopped
 
   frontend:
-    container_name: dandywishes_frontend
+    container_name: frontend
     build:
       context: ./frontend
       dockerfile: Dockerfile
