@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, ChevronDown, Loader2, Bell } from 'lucide-react';
+import { Menu, X, ChevronDown, Loader2, Bell, Wifi, WifiOff } from 'lucide-react';
 import { User } from '@supabase/supabase-js'
 import { toast } from 'react-toastify';
 
@@ -58,7 +58,7 @@ const UserAvatar: React.FC<{ user: User | null, userProfile: UserProfile | null 
 }
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, userProfile, signOut, isLoading, newWishNotification, clearNewWishNotification } = useAuth();
+  const { user, userProfile, signOut, isLoading, newWishNotification, clearNewWishNotification, wsConnected, reconnectWebSocket } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -145,10 +145,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
               </div>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
-              {user && (
-                <div className="mr-4">
-                  <Bell className="h-6 w-6 text-gray-400" />
-                </div>
+            {user && (
+                <>
+                  <div className="mr-4 flex items-center">
+                    {wsConnected ? (
+                      <Wifi className="h-5 w-5 text-green-500" title="Real-time updates connected" />
+                    ) : (
+                      <WifiOff
+                        className="h-5 w-5 text-red-500 cursor-pointer"
+                        onClick={reconnectWebSocket}
+                        title="Real-time updates disconnected. Click to reconnect"
+                      />
+                    )}
+                  </div>
+                  <div className="mr-4">
+                    <Bell className="h-6 w-6 text-gray-400" />
+                  </div>
+                </>
               )}
               {user ? (
                 <div className="ml-3 relative">
