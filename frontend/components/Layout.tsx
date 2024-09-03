@@ -4,7 +4,6 @@ import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { Menu, X, ChevronDown, Loader2, Bell } from 'lucide-react';
 import { User } from '@supabase/supabase-js'
-import { toast } from 'react-toastify';
 
 interface UserProfile {
     id: string;
@@ -58,7 +57,7 @@ const UserAvatar: React.FC<{ user: User | null, userProfile: UserProfile | null 
 }
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const { user, userProfile, signOut, isLoading, newWishNotification, clearNewWishNotification } = useAuth();
+  const { user, userProfile, signOut, isLoading } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -75,16 +74,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     setIsMenuOpen(false);
     setIsDropdownOpen(false);
   };
-
-  useEffect(() => {
-    if (newWishNotification) {
-      toast.info(newWishNotification, {
-        onClose: clearNewWishNotification
-      });
-      // Clear the notification after showing the toast
-      clearNewWishNotification();
-    }
-  }, [newWishNotification, clearNewWishNotification]);
 
   if (isLoading) {
     return (
