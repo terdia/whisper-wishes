@@ -2,7 +2,15 @@ import React, { createContext, useState, useEffect, useContext, useCallback, Rea
 import { useRouter } from 'next/router'
 import { supabase } from '../utils/supabaseClient'
 import { Session, User } from '@supabase/supabase-js'
-import { UserProfile } from '../types/UserProfile'
+
+interface UserProfile {
+  id: string
+  username?: string
+  bio?: string
+  avatar_url?: string
+  is_premium?: boolean
+  is_public?: boolean
+}
 
 interface AuthContextType {
   user: User | null

@@ -16,6 +16,7 @@ COPY . .
 EXPOSE 3000
 
 # Set environment variables
+# These are public keys and safe to use in ARG and ENV
 ARG NEXT_PUBLIC_SUPABASE_URL
 ARG NEXT_PUBLIC_SUPABASE_ANON_KEY
 
