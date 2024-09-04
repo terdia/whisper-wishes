@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 
 services:
   nginx:
@@ -14,6 +14,16 @@ services:
       update_config:
         parallelism: 1
         order: start-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - dandywishes_local
 
@@ -21,6 +31,8 @@ services:
     image: dandywishes_frontend:${BUILD_VERSION:-latest}
     environment:
       - NODE_ENV=production
+    ports:
+      - "3000:3000"
     secrets:
       - supabase_url
       - supabase_key
@@ -28,7 +40,17 @@ services:
       replicas: 2
       update_config:
         parallelism: 1
-        order: start-first
+        order: stop-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/version"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
     networks:
       - dandywishes_local
 
@@ -48,10 +70,22 @@ services:
         delay: 5s
         max_attempts: 3
         window: 120s
+      update_config:
+        parallelism: 1
+        order: stop-first
+        failure_action: rollback
+      rollback_config:
+        parallelism: 1
+        order: stop-first
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/api/status"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 30s
     networks:
       - dandywishes_local
 
-# Networks
 networks:
   dandywishes_local:
     driver: overlay

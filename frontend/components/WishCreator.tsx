@@ -243,9 +243,9 @@ const WishCreator: React.FC = () => {
                   >
                     <ChevronDown 
                       size={24} 
-                      className={`text-pink-800 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+                      className={`text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
                     />
-                    <span className="text-pink-800 text-sm mt-1">
+                    <span className="text-white text-sm mt-1">
                       {isExpanded ? "Hide" : "Create a Wish"}
                     </span>
                   </button>
