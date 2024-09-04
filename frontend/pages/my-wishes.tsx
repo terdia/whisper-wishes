@@ -260,12 +260,12 @@ const MyWishes: React.FC = () => {
     </motion.div>
   )
 
-  if (authLoading || isLoading) {
-    return <LoadingSpinner fullScreen />
+  if (!user || !userProfile) {
+    return <UnauthenticatedUserPrompt />;
   }
 
-  if (!user) {
-    return <UnauthenticatedUserPrompt />
+  if (authLoading || isLoading) {
+    return <LoadingSpinner fullScreen />
   }
 
   return (

@@ -269,12 +269,12 @@ const GlobalWishGarden: React.FC = () => {
     }
   };
 
-  if (authLoading || isLoading) {
-    return <LoadingSpinner fullScreen />;
-  }
-
   if (!user || !userProfile) {
     return <UnauthenticatedUserPrompt />;
+  }
+
+  if (authLoading || isLoading) {
+    return <LoadingSpinner fullScreen />;
   }
 
   return (

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Wind, Flower, User, Lock, Globe, ChevronDown, PlusCircle } from 'lucide-react';
+import { Wind, Flower, User, Lock, Globe, ChevronDown, PlusCircle, ChevronUp } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import Link from 'next/link';
 import Confetti from 'react-confetti';
@@ -32,6 +32,7 @@ const WishCreator: React.FC = () => {
   const [level, setLevel] = useState(1);
   const [showConfetti, setShowConfetti] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
+  const [isControlsVisible, setIsControlsVisible] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -201,115 +202,144 @@ const WishCreator: React.FC = () => {
       </header>
       
       <main className="relative bg-white bg-opacity-20 rounded-lg shadow-lg overflow-hidden mb-6">
-        <div ref={containerRef} className="h-[50vh] overflow-hidden relative">
+        <div ref={containerRef} className="h-[70vh] overflow-hidden relative">
           {wishes.map((wish) => (
             <DraggableWish key={wish.id} wish={wish} containerRef={containerRef} />
           ))}
-        </div>
-        
-        <motion.div 
-          className="bg-white bg-opacity-30 backdrop-blur-sm p-4 rounded-t-2xl absolute bottom-0 left-0 right-0"
-          initial={false}
-          animate={{ height: isExpanded ? 'auto' : '60px' }}
-        >
-          <button 
-            className="absolute top-2 left-1/2 transform -translate-x-1/2 flex flex-col items-center"
-            onClick={() => setIsExpanded(!isExpanded)}
+          
+          {/* Floating toggle button */}
+          <motion.button
+            className="absolute bottom-4 right-4 bg-purple-600 text-white px-4 py-2 rounded-full shadow-lg z-10 flex items-center"
+            onClick={() => setIsControlsVisible(!isControlsVisible)}
+            whileHover={{ scale: 1.05 }}
+            whileTap={{ scale: 0.95 }}
           >
-            <ChevronDown 
-              size={24} 
-              className={`text-gray-800 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+            <ChevronUp
+              size={20}
+              className={`transition-transform duration-300 ${isControlsVisible ? 'rotate-180' : ''} mr-2`}
             />
-            <span className="text-white text-sm mt-1">
-              {isExpanded ? "Hide" : "Create a Wish"}
+            <span className="text-sm font-medium">
+              {isControlsVisible ? "Close Controls" : "Open Controls"}
             </span>
-          </button>
+          </motion.button>
+
           <AnimatePresence>
-            {isExpanded && (
+            {isControlsVisible && (
               <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="pt-10"
+                initial={{ opacity: 0, y: 50 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: 50 }}
+                className="absolute bottom-0 left-0 right-0 bg-pink-200 bg-opacity-90 p-4 rounded-t-2xl shadow-lg"
               >
-                <input 
-                  type="text" 
-                  value={wishText}
-                  onChange={(e) => setWishText(e.target.value)}
-                  placeholder="Whisper your wish..."
-                  maxLength={200}
-                  className="w-full p-3 rounded-full bg-white bg-opacity-50 placeholder-gray-600 mb-3 text-gray-800"
-                />
-                <select
-                  value={category}
-                  onChange={(e) => setCategory(e.target.value)}
-                  className="w-full p-3 rounded-full bg-white bg-opacity-50 mb-3 text-gray-800"
+                {/* Wish creation form */}
+                <motion.div 
+                  className="bg-pink-300 bg-opacity-50 backdrop-blur-sm p-4 rounded-t-2xl"
+                  initial={false}
+                  animate={{ height: isExpanded ? 'auto' : '60px' }}
                 >
-                  <option value="">Select category</option>
-                  <option value="personal">Personal Growth</option>
-                  <option value="career">Career & Education</option>
-                  <option value="health">Health & Wellness</option>
-                  <option value="relationships">Relationships & Family</option>
-                  <option value="financial">Financial Goals</option>
-                  <option value="travel">Travel & Adventure</option>
-                  <option value="creativity">Creativity & Hobbies</option>
-                  <option value="spiritual">Spiritual & Mindfulness</option>
-                  <option value="community">Community & Social Impact</option>
-                  <option value="environmental">Environmental & Sustainability</option>
-                  <option value="learning">Learning & Skills</option>
-                  <option value="lifestyle">Lifestyle & Home</option>
-                  <option value="other">Other</option>
-                </select>
-                <div className="flex items-center justify-between mb-3">
-                  <div className="flex items-center space-x-2">
-                    <button
-                      onClick={() => setIsPrivate(!isPrivate)}
-                      className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600' : 'bg-white bg-opacity-50'}`}
-                    >
-                      {isPrivate ? <Lock size={20} className="text-white" /> : <Globe size={20} className="text-gray-800" />}
-                    </button>
-                    <span className="text-sm text-gray-800 font-semibold">
-                      {isPrivate ? "Private" : "Public"}
-                    </span>
-                  </div>
-                  <button
-                    onClick={createWish}
-                    className="bg-purple-600 px-4 py-2 rounded-full text-white font-semibold flex items-center"
+                  <button 
+                    className="absolute top-2 left-1/2 transform -translate-x-1/2 flex flex-col items-center"
+                    onClick={() => setIsExpanded(!isExpanded)}
                   >
-                    <PlusCircle size={20} className="mr-2" />
-                    Make a Wish
+                    <ChevronDown 
+                      size={24} 
+                      className={`text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+                    />
+                    <span className="text-white text-sm mt-1">
+                      {isExpanded ? "Hide" : "Create a Wish"}
+                    </span>
                   </button>
-                </div>
-                <p className="text-sm text-center text-gray-800">
-                  {isPrivate 
-                    ? "Your wish will be kept private and only visible to you. Toggle to make it public." 
-                    : "Your wish will be visible in the public Wish Garden for others to support. Toggle to make it private."}
-                </p>
+                  <AnimatePresence>
+                    {isExpanded && (
+                      <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="pt-10"
+                      >
+                        <input 
+                          type="text" 
+                          value={wishText}
+                          onChange={(e) => setWishText(e.target.value)}
+                          placeholder="Whisper your wish..."
+                          maxLength={200}
+                          className="w-full p-3 rounded-full bg-white bg-opacity-50 placeholder-gray-600 mb-3 text-gray-800"
+                        />
+                        <select
+                          value={category}
+                          onChange={(e) => setCategory(e.target.value)}
+                          className="w-full p-3 rounded-full bg-white bg-opacity-50 mb-3 text-gray-800"
+                        >
+                          <option value="">Select category</option>
+                          <option value="personal">Personal Growth</option>
+                          <option value="career">Career & Education</option>
+                          <option value="health">Health & Wellness</option>
+                          <option value="relationships">Relationships & Family</option>
+                          <option value="financial">Financial Goals</option>
+                          <option value="travel">Travel & Adventure</option>
+                          <option value="creativity">Creativity & Hobbies</option>
+                          <option value="spiritual">Spiritual & Mindfulness</option>
+                          <option value="community">Community & Social Impact</option>
+                          <option value="environmental">Environmental & Sustainability</option>
+                          <option value="learning">Learning & Skills</option>
+                          <option value="lifestyle">Lifestyle & Home</option>
+                          <option value="other">Other</option>
+                        </select>
+                        <div className="flex items-center justify-between mb-3">
+                          <div className="flex items-center space-x-2">
+                            <button
+                              onClick={() => setIsPrivate(!isPrivate)}
+                              className={`p-2 rounded-full ${isPrivate ? 'bg-purple-600' : 'bg-white bg-opacity-50'}`}
+                            >
+                              {isPrivate ? <Lock size={20} className="text-white" /> : <Globe size={20} className="text-gray-800" />}
+                            </button>
+                            <span className="text-sm text-gray-800 font-semibold">
+                              {isPrivate ? "Private" : "Public"}
+                            </span>
+                          </div>
+                          <button
+                            onClick={createWish}
+                            className="bg-purple-600 px-4 py-2 rounded-full text-white font-semibold flex items-center"
+                          >
+                            <PlusCircle size={20} className="mr-2" />
+                            Make a Wish
+                          </button>
+                        </div>
+                        <p className="text-sm text-center text-gray-800">
+                          {isPrivate 
+                            ? "Your wish will be kept private and only visible to you. Toggle to make it public." 
+                            : "Your wish will be visible in the public Wish Garden for others to support. Toggle to make it private."}
+                        </p>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </motion.div>
+
+                {/* Blow Wishes and Go to Wish Garden buttons */}
+                <footer className="flex flex-col space-y-3 mt-4">
+                  <button 
+                    onClick={blowWishes} 
+                    className="bg-pink-400 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-pink-500 transition-all"
+                  >
+                    <Wind className="mr-2" /> Blow Wishes
+                  </button>
+                  <Link href="/global-garden">
+                    <a className="bg-pink-400 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-pink-500 transition-all">
+                      <Flower className="mr-2" /> Go to Wish Garden
+                    </a>
+                  </Link>
+                </footer>
               </motion.div>
             )}
           </AnimatePresence>
-        </motion.div>
+        </div>
       </main>
-
-      <footer className="flex flex-col space-y-3 mt-4">
-        <button 
-          onClick={blowWishes} 
-          className="bg-white bg-opacity-30 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-opacity-40 transition-all"
-        >
-          <Wind className="mr-2" /> Blow Wishes
-        </button>
-        <Link href="/global-garden">
-          <a className="bg-white bg-opacity-30 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-opacity-40 transition-all">
-            <Flower className="mr-2" /> Go to Wish Garden
-          </a>
-        </Link>
-      </footer>
     </div>
   );
 };
 
 const DraggableWish: React.FC<DraggableWishProps> = ({ wish, containerRef }) => {
-  const [isHovered, setIsHovered] = useState(false);
+  const [isDetailsVisible, setIsDetailsVisible] = useState(false);
   const colors = ['bg-yellow-300', 'bg-pink-300', 'bg-blue-300', 'bg-green-300', 'bg-purple-300'];
   const randomColor = colors[Math.floor(Math.random() * colors.length)];
 
@@ -319,8 +349,8 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish, containerRef }) => 
     if (containerRef.current) {
       const container = containerRef.current;
       const updatePosition = () => {
-        const newX = Math.random() * (container.offsetWidth - 64); // 64 is the width of the wish
-        const newY = Math.random() * (container.offsetHeight - 64); // 64 is the height of the wish
+        const newX = Math.random() * 60 + 20; // Keep within 20-80% of container width
+        const newY = Math.random() * 40 + 30; // Keep within 30-70% of container height
         setPosition({ x: newX, y: newY });
       };
 
@@ -330,44 +360,60 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish, containerRef }) => 
     }
   }, [containerRef]);
 
+  const handleInteraction = (event: React.MouseEvent | React.TouchEvent) => {
+    event.stopPropagation();
+    setIsDetailsVisible(!isDetailsVisible);
+  };
+
   return (
     <motion.div
-      className={`absolute w-16 h-16 ${randomColor} rounded-full flex items-center justify-center cursor-move shadow-lg`}
+      className={`absolute w-12 h-12 sm:w-16 sm:h-16 ${randomColor} rounded-full flex items-center justify-center cursor-pointer shadow-lg`}
       style={{
-        left: position.x,
-        top: position.y,
+        left: `${position.x}%`,
+        top: `${position.y}%`,
       }}
       drag
       dragMomentum={false}
+      dragConstraints={containerRef}
+      dragElastic={0.1}
       whileHover={{ scale: 1.1 }}
       whileDrag={{ scale: 1.1 }}
-      onHoverStart={() => setIsHovered(true)}
-      onHoverEnd={() => setIsHovered(false)}
+      onClick={handleInteraction}
+      onTap={handleInteraction}
     >
-      <span className="text-2xl">🌟</span>
+      <span className="text-xl sm:text-2xl">🌟</span>
 
-      {isHovered && (
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          exit={{ opacity: 0, y: 10 }}
-          className="absolute w-48 bg-white rounded-lg p-2 shadow-xl z-10"
-          style={{
-            left: '50%',
-            bottom: '120%',
-            transform: 'translateX(-50%)',
-          }}
-        >
-          <p className="text-gray-800 text-sm font-medium mb-2">{wish.text}</p>
-          <div className="text-xs text-gray-500 mt-1">Category: {wish.category}</div>
-          <div className="mt-2 flex justify-between items-center">
-            <span className="text-xs text-purple-600">✨ +5 XP</span>
-            <button className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600 transition-colors duration-200">
-              Support
-            </button>
-          </div>
-        </motion.div>
-      )}
+      <AnimatePresence>
+        {isDetailsVisible && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute w-48 bg-white rounded-lg p-2 shadow-xl z-10"
+            style={{
+              left: '50%',
+              bottom: '120%',
+              transform: 'translateX(-50%)',
+            }}
+            onClick={(e) => e.stopPropagation()} // Prevent closing when clicking inside
+          >
+            <p className="text-gray-800 text-sm font-medium mb-2">{wish.text}</p>
+            <div className="text-xs text-gray-500 mt-1">Category: {wish.category}</div>
+            <div className="mt-2 flex justify-between items-center">
+              <span className="text-xs text-purple-600">✨ +5 XP</span>
+              <button 
+                className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600 transition-colors duration-200"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  // Handle support action
+                }}
+              >
+                Support
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
   );
 };
