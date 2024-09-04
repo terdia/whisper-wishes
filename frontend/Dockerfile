@@ -13,6 +13,7 @@ RUN npm install
 COPY . .
 
 # Use build version to force cache invalidation
+ARG BUILD_VERSION
 RUN echo "Build version: ${BUILD_VERSION}"
 
 # Expose the port Next.js runs on
