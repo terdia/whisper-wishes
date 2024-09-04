@@ -27,32 +27,30 @@ services:
     networks:
       - dandywishes_local
 
-  frontend:
-    image: dandywishes_frontend:${BUILD_VERSION:-latest}
-    environment:
-      - NODE_ENV=production
-    ports:
-      - "3000:3000"
-    secrets:
-      - supabase_url
-      - supabase_key
-    deploy:
-      replicas: 2
-      update_config:
-        parallelism: 1
-        order: stop-first
-        failure_action: rollback
-      rollback_config:
-        parallelism: 1
-        order: stop-first
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:3000/api/version"]
+frontend:
+  image: dandywishes_frontend:${BUILD_VERSION:-latest}
+  environment:
+    - NODE_ENV=production
+  secrets:
+    - supabase_url
+    - supabase_key
+  deploy:
+    replicas: 2
+    update_config:
+      parallelism: 1
+      order: stop-first
+      failure_action: rollback
+    rollback_config:
+      parallelism: 1
+      order: stop-first
+  healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
       interval: 30s
       timeout: 10s
       retries: 3
       start_period: 40s
-    networks:
-      - dandywishes_local
+  networks:
+    - dandywishes_local
 
   portainer:
     image: portainer/portainer-ce:latest
