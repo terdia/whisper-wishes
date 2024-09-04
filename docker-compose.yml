@@ -44,7 +44,7 @@ services:
         parallelism: 1
         order: stop-first
     healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
+        test: ["CMD", "curl", "-f", "http://localhost:3000/api/health"]
         interval: 30s
         timeout: 10s
         retries: 3
