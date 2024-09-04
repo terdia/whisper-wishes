@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { Wind, Flower, User, Lock, Globe, ChevronDown, PlusCircle, ChevronUp } from 'lucide-react';
-import { motion, AnimatePresence } from 'framer-motion';
+import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import Link from 'next/link';
 import Confetti from 'react-confetti';
 import { syncLocalWishes } from '../utils/wishSync';
@@ -243,9 +243,9 @@ const WishCreator: React.FC = () => {
                   >
                     <ChevronDown 
                       size={24} 
-                      className={`text-white transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
+                      className={`text-pink-800 transition-transform duration-300 ${isExpanded ? 'rotate-180' : ''}`} 
                     />
-                    <span className="text-white text-sm mt-1">
+                    <span className="text-pink-800 text-sm mt-1">
                       {isExpanded ? "Hide" : "Create a Wish"}
                     </span>
                   </button>
@@ -360,9 +360,12 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish, containerRef }) => 
     }
   }, [containerRef]);
 
-  const handleInteraction = (event: React.MouseEvent | React.TouchEvent) => {
-    event.stopPropagation();
+  const handleInteraction = () => {
     setIsDetailsVisible(!isDetailsVisible);
+  };
+
+  const handleTap = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    handleInteraction();
   };
 
   return (
@@ -379,7 +382,7 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish, containerRef }) => 
       whileHover={{ scale: 1.1 }}
       whileDrag={{ scale: 1.1 }}
       onClick={handleInteraction}
-      onTap={handleInteraction}
+      onTap={handleTap}
     >
       <span className="text-xl sm:text-2xl">🌟</span>
 
