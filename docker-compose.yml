@@ -21,6 +21,8 @@ services:
     image: dandywishes_frontend:${BUILD_VERSION:-latest}
     environment:
       - NODE_ENV=production
+      - NEXT_PUBLIC_SUPABASE_URL=${NEXT_PUBLIC_SUPABASE_URL}
+      - NEXT_PUBLIC_SUPABASE_ANON_KEY=${NEXT_PUBLIC_SUPABASE_ANON_KEY}
     deploy:
       replicas: 2
       update_config:
