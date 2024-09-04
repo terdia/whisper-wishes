@@ -32,7 +32,7 @@ services:
       replicas: 2
       update_config:
         parallelism: 1
-        order: rolling-update
+        order: start-first
     networks:
       - dandywishes_local
 
