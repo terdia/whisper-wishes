@@ -3,6 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import withAuth from '../components/withAuth';
 import { Line } from 'react-chartjs-2';
+
+import { Camera, Edit2, Award, Lock } from 'lucide-react';
+import { debounce } from 'lodash';
+import LoadingSpinner from '../components/LoadingSpinner';
+import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
+
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,8 +20,6 @@ import {
   Legend,
 } from 'chart.js';
 
-import { Camera, Edit2, Award, Lock } from 'lucide-react';
-import { debounce } from 'lodash';
 
 ChartJS.register(
   CategoryScale,
@@ -28,7 +32,8 @@ ChartJS.register(
 );
 
 const Profile = () => {
-  const { user, userProfile, updateProfile } = useAuth();
+  const { user, userProfile, updateProfile, isLoading: authLoading } = useAuth();
+  const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [localProfile, setLocalProfile] = useState({
     username: '',
@@ -45,7 +50,6 @@ const Profile = () => {
   const [achievements, setAchievements] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
-  const [dataFetched, setDataFetched] = useState(false);
 
   let avatarUrl = userProfile?.avatar_url;
   if (userProfile?.avatar_url) {
@@ -59,23 +63,21 @@ const Profile = () => {
   }
 
   const fetchUserData = useCallback(async () => {
-    if (!user || dataFetched) return;
+    if (!user) return;
+    setIsLoading(true);
 
     try {
       const { data, error } = await supabase.rpc('get_user_profile_data', { p_user_id: user.id });
       if (error) throw error;
 
-      // Set stats
       setStats({
         totalWishes: data.stats.total_wishes_made,
         wishesShared: data.stats.wishes_shared,
         wishesSupported: data.stats.wishes_supported
       });
 
-      // Set activity data if it's not null
       setActivityData(processActivityData(data.activity));
 
-      // Process and set achievements
       const processedAchievements = data.achievements.map(achievement => {
         const userAchievement = data.user_achievements.find(ua => ua.achievement_id === achievement.id);
         return {
@@ -85,27 +87,20 @@ const Profile = () => {
         };
       });
       setAchievements(processedAchievements);
-
-      setDataFetched(true);
     } catch (error) {
       console.error('Error fetching user data:', error);
       setModalMessage('Failed to fetch user data. Please try again.');
       setShowModal(true);
+    } finally {
+      setIsLoading(false);
     }
-  }, [user, dataFetched]);
-
-  const debouncedFetchUserData = useCallback(
-    debounce(() => {
-      fetchUserData();
-    }, 300),
-    [fetchUserData]
-  );
+  }, [user]);
 
   useEffect(() => {
-    if (user && !dataFetched) {
-      debouncedFetchUserData();
+    if (user && userProfile && !authLoading) {
+      fetchUserData();
     }
-  }, [user, debouncedFetchUserData, dataFetched]);
+  }, [user, userProfile, authLoading, fetchUserData]);
 
   useEffect(() => {
     if (user && userProfile) {
@@ -278,6 +273,14 @@ const Profile = () => {
       )}
     </div>
   );
+
+  if (authLoading || isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  if (!user || !userProfile) {
+    return <UnauthenticatedUserPrompt />;
+  }
 
   return (
     <div className="max-w-6xl mx-auto mt-8 p-6 bg-gray-50">

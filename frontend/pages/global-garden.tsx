@@ -5,6 +5,8 @@ import { useAuth } from '../contexts/AuthContext';
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
 import { toast } from 'react-toastify';
 import { Loader2, Search, Wind, Info, User, X, Calendar, ThumbsUp, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
+import LoadingSpinner from '../components/LoadingSpinner';
+
 
 interface UserProfile {
   id: string;
@@ -172,7 +174,7 @@ const WishModal: React.FC<{ wish: Wish; onClose: () => void; onWater: (wishId: s
 };
 
 const GlobalWishGarden: React.FC = () => {
-  const { user } = useAuth();
+  const { user, userProfile, isLoading: authLoading } = useAuth();
   const [wishes, setWishes] = useState<Wish[]>([]);
   const [isLoading, setIsLoading] = useState<boolean>(true);
   const [searchTerm, setSearchTerm] = useState<string>('');
@@ -183,6 +185,7 @@ const GlobalWishGarden: React.FC = () => {
   const wishesPerPage = 12;
 
   const fetchWishes = useCallback(async () => {
+    if (!user) return;
     setIsLoading(true);
     try {
       let query = supabase
@@ -208,13 +211,13 @@ const GlobalWishGarden: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  }, [sortOrder]);
+  }, [sortOrder, user]);
 
   useEffect(() => {
-    if (user) {
+    if (user && userProfile && !authLoading) {
       fetchWishes();
     }
-  }, [user, fetchWishes]);
+  }, [user, userProfile, authLoading, fetchWishes]);
 
   useEffect(() => {
     setCurrentPage(1); // Reset to first page when search term or category changes
@@ -266,20 +269,16 @@ const GlobalWishGarden: React.FC = () => {
     }
   };
 
-  if (!user) {
+  if (authLoading || isLoading) {
+    return <LoadingSpinner fullScreen />;
+  }
+
+  if (!user || !userProfile) {
     return <UnauthenticatedUserPrompt />;
   }
 
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-green-400 to-blue-500">
-        <Loader2 className="h-12 w-12 animate-spin text-white" />
-      </div>
-    );
-  }
-
   return (
-    <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-br from-green-400 to-blue-500 p-4 sm:p-8">
+    <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-8">
       <motion.h1 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

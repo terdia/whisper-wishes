@@ -9,6 +9,7 @@ import { Trash2, Calendar as CalendarIcon, List, Wind, Moon, Sun, Grid, Edit2, X
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt'
 import { syncLocalWishes } from '../utils/wishSync'
 import { toast } from 'react-toastify'
+import LoadingSpinner from '../components/LoadingSpinner'
 
 interface Wish {
   id: string
@@ -27,34 +28,41 @@ const themes = {
 }
 
 const MyWishes: React.FC = () => {
+  const { user, userProfile, isLoading: authLoading } = useAuth()
   const [wishes, setWishes] = useState<Wish[]>([])
+  const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState('nightSky')
   const [viewMode, setViewMode] = useState<'list' | 'calendar' | 'grid'>('grid')
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
   const [editingWish, setEditingWish] = useState<Wish | null>(null)
-  const { user } = useAuth()
 
   useEffect(() => {
-    if (user) {
+    if (user && userProfile && !authLoading) {
       syncLocalWishes(user.id).then(() => {
-        fetchWishes();
-      });
+        fetchWishes()
+      })
     }
-  }, [user]);
+  }, [user, userProfile, authLoading])
 
-  async function fetchWishes() {
-    if (!user) return
+  const fetchWishes = async () => {
+    setIsLoading(true)
+    try {
+      const { data, error } = await supabase
+        .from('wishes')
+        .select('*')
+        .eq('user_id', user!.id)
+        .order('created_at', { ascending: false })
 
-    const { data, error } = await supabase
-      .from('wishes')
-      .select('*')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
-
-    if (error) console.error('Error fetching wishes:', error)
-    else setWishes(data || [])
+      if (error) throw error
+      setWishes(data || [])
+    } catch (error) {
+      console.error('Error fetching wishes:', error)
+      toast.error('Failed to fetch wishes')
+    } finally {
+      setIsLoading(false)
+    }
   }
 
   const filteredWishes = useMemo(() => {
@@ -251,6 +259,10 @@ const MyWishes: React.FC = () => {
       </motion.div>
     </motion.div>
   )
+
+  if (authLoading || isLoading) {
+    return <LoadingSpinner fullScreen />
+  }
 
   if (!user) {
     return <UnauthenticatedUserPrompt />
