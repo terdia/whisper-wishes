@@ -10,6 +10,7 @@ import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt'
 import { syncLocalWishes } from '../utils/wishSync'
 import { toast } from 'react-toastify'
 import LoadingSpinner from '../components/LoadingSpinner'
+import SEO from '../components/SEO'
 
 interface Wish {
   id: string
@@ -261,7 +262,15 @@ const MyWishes: React.FC = () => {
   )
 
   if (!user || !userProfile) {
-    return <UnauthenticatedUserPrompt />;
+    return (
+      <>
+        <SEO
+          title="My Wishes - Manage Your Personal Wishes"
+          description="Create, organize, and track your personal wishes. Sign up or log in to start your wishing journey!"
+        />
+        <UnauthenticatedUserPrompt />
+      </>
+    );
   }
 
   if (authLoading || isLoading) {
@@ -270,6 +279,11 @@ const MyWishes: React.FC = () => {
 
   return (
     <div className={`min-h-[calc(100vh-20rem)] bg-gradient-to-br ${themes[theme]} text-white`}>
+      <SEO 
+        title="My Wishes"
+        description="View and manage your personal wishes."
+        noindex={false}
+      />
       <div className="container mx-auto px-4 py-12">
         <motion.h1 
           className="text-4xl font-bold mb-8 text-center"

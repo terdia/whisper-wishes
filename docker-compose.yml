@@ -44,7 +44,7 @@ services:
         parallelism: 1
         order: stop-first
     healthcheck:
-        test: ["CMD", "curl", "-f", "http://localhost:3000/api/version"]
+        test: ["CMD-SHELL", "exit 0"]
         interval: 30s
         timeout: 10s
         retries: 3

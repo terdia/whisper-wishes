@@ -6,7 +6,7 @@ import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
 import { toast } from 'react-toastify';
 import { Loader2, Search, Wind, Info, User, X, Calendar, ThumbsUp, Filter, ChevronLeft, ChevronRight } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
-
+import SEO from '../components/SEO';
 
 interface UserProfile {
   id: string;
@@ -270,7 +270,15 @@ const GlobalWishGarden: React.FC = () => {
   };
 
   if (!user || !userProfile) {
-    return <UnauthenticatedUserPrompt />;
+    return (
+      <>
+        <SEO
+          title="Global Wish Garden - Join Our Community"
+          description="Explore and support wishes from around the world in our Global Wish Garden. Sign up or log in to participate!"
+        />
+        <UnauthenticatedUserPrompt />
+      </>
+    );
   }
 
   if (authLoading || isLoading) {
@@ -279,6 +287,12 @@ const GlobalWishGarden: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-8">
+      <SEO
+        title="Global Wish Garden"
+        description="Explore and support wishes from around the world in our Global Wish Garden."
+        noindex={false}
+      />
+
       <motion.h1 
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}

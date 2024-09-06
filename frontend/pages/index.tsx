@@ -1,15 +1,14 @@
 import type { NextPage } from 'next'
-import Head from 'next/head'
 import WishCreator from '../components/WishCreator'
+import SEO from '../components/SEO'
 
 const Home: NextPage = () => {
   return (
     <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-      <Head>
-        <title>Dandy Wishes</title>
-        <meta name="description" content="Make your wishes come true" />
-        <link rel="icon" href="/favicon.ico" />
-      </Head>
+      <SEO 
+        title="Make Your Wishes Come True"
+        description="Plant your wishes in our digital dandelion field and let your dreams take flight. Share your aspirations, support others, and watch as the community grows together."
+      />
 
       <header className="text-center py-8 px-4">
         <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Whisper. Wish. Wonder.</h1>
