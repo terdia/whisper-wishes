@@ -1,30 +1,28 @@
 import { NextApiRequest, NextApiResponse } from 'next'
 
-const BASE_URL = 'https://www.dandywishes.com'
-
 const generateSiteMap = () => {
   return `<?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
      <url>
-       <loc>${BASE_URL}</loc>
+       <loc>/</loc>
      </url>
      <url>
-       <loc>${BASE_URL}/global-garden</loc>
+       <loc>/global-garden</loc>
      </url>
      <url>
-       <loc>${BASE_URL}/my-wishes</loc>
+       <loc>/my-wishes</loc>
      </url>
      <url>
-       <loc>${BASE_URL}/how-it-works</loc>
+       <loc>/how-it-works</loc>
      </url>
      <url>
-       <loc>${BASE_URL}/login</loc>
+       <loc>/login</loc>
      </url>
      <url>
-       <loc>${BASE_URL}/signup</loc>
+       <loc>/signup</loc>
      </url>
      <url>
-       <loc>${BASE_URL}/magic-link</loc>
+       <loc>/magic-link</loc>
      </url>
    </urlset>
  `
