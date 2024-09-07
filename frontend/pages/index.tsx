@@ -4,12 +4,11 @@ import WishCreator from '../components/WishCreator'
 import SEO from '../components/SEO'
 import OnboardingFlow from '../components/OnboardingFlow'
 import { RefreshCw } from 'lucide-react'
-import { useAuth } from '../contexts/AuthContext'
 
 const Home: NextPage = () => {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(true);
   const [showCondensedTutorial, setShowCondensedTutorial] = useState(false);
-  const { user } = useAuth();
+  const [showTutorialChoice, setShowTutorialChoice] = useState(false);
 
   useEffect(() => {
     const onboardingStatus = localStorage.getItem('onboardingComplete');
@@ -18,8 +17,19 @@ const Home: NextPage = () => {
     }
   }, []);
 
+  const handleReplayTutorial = () => {
+    setShowTutorialChoice(true);
+  };
+
+  const startTutorial = (isCondensed: boolean) => {
+    setShowCondensedTutorial(isCondensed);
+    setIsOnboardingComplete(false);
+    setShowTutorialChoice(false);
+  };
+
   const handleOnboardingComplete = () => {
     setIsOnboardingComplete(true);
+    setShowCondensedTutorial(false);
     localStorage.setItem('onboardingComplete', 'true');
   };
 
@@ -31,14 +41,13 @@ const Home: NextPage = () => {
       />
 
       {!isOnboardingComplete && (
-        <OnboardingFlow onComplete={handleOnboardingComplete} />
+        <OnboardingFlow 
+          onComplete={handleOnboardingComplete} 
+          isCondensed={showCondensedTutorial}
+        />
       )}
 
-      {showCondensedTutorial && (
-        <OnboardingFlow onComplete={() => setShowCondensedTutorial(false)} isCondensed={true} />
-      )}
-
-      {(isOnboardingComplete || showCondensedTutorial) && (
+      {isOnboardingComplete && (
         <>
           <header className="text-center py-8 px-4">
             <h1 className="text-3xl sm:text-4xl font-bold text-white mb-2">Whisper. Wish. Wonder.</h1>
@@ -53,13 +62,36 @@ const Home: NextPage = () => {
           </main>
 
           <button
-            onClick={() => setShowCondensedTutorial(true)}
+            onClick={handleReplayTutorial}
             className="fixed bottom-4 right-4 bg-white text-purple-600 p-2 rounded-full shadow-lg hover:bg-purple-100 transition-colors duration-300"
             title="Replay Tutorial"
           >
             <RefreshCw size={24} />
           </button>
         </>
+      )}
+
+      {showTutorialChoice && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white p-6 rounded-lg shadow-xl max-w-sm w-full">
+            <h3 className="text-xl font-bold mb-4 text-gray-800">Choose Tutorial Type</h3>
+            <p className="mb-4 text-gray-600">Would you like to go through the full tutorial or a condensed version?</p>
+            <div className="flex justify-between">
+              <button
+                onClick={() => startTutorial(false)}
+                className="bg-purple-600 text-white px-4 py-2 rounded-lg hover:bg-purple-700 transition duration-300"
+              >
+                Full Tutorial
+              </button>
+              <button
+                onClick={() => startTutorial(true)}
+                className="bg-blue-500 text-white px-4 py-2 rounded-lg hover:bg-blue-600 transition duration-300"
+              >
+                Condensed Version
+              </button>
+            </div>
+          </div>
+        </div>
       )}
 
       <footer className="bg-purple-800 text-white py-4 text-center">

@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Wind, Globe, Lock, PlusCircle, ChevronDown } from 'lucide-react';
+import { Wind, Globe, Lock } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 
@@ -14,6 +14,7 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, isCondensed
   const [wishText, setWishText] = useState('');
   const [category, setCategory] = useState('');
   const [isPrivate, setIsPrivate] = useState(false);
+  const [isWishDetailsVisible, setIsWishDetailsVisible] = useState(false);
   const { user } = useAuth();
 
   const steps = isCondensed
@@ -246,31 +247,64 @@ const OnboardingFlow: React.FC<OnboardingFlowProps> = ({ onComplete, isCondensed
           </motion.div>
         );
 
-      case 'interactionTutorial':
-        return (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="text-center"
-          >
-            <h3 className="text-xl font-semibold mb-4">Interact with your wish</h3>
-            <p className="mb-6">Try dragging your wish around!</p>
+        case 'interactionTutorial':
+          return (
             <motion.div
-              drag
-              dragConstraints={{ left: -50, right: 50, top: -50, bottom: 50 }}
-              className="w-24 h-24 bg-purple-400 rounded-full mx-auto mb-6 flex items-center justify-center cursor-move"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="text-center"
             >
-              <span className="text-3xl">🌼</span>
+              <h3 className="text-xl font-semibold mb-4">Interact with your wish</h3>
+              <p className="mb-6">Try dragging your wish around or tap it to see details!</p>
+              <div className="relative w-64 h-64 mx-auto mb-6 border-2 border-dashed border-purple-300 rounded-lg">
+                <motion.div
+                  drag
+                  dragConstraints={{ left: 0, right: 0, top: 0, bottom: 0 }}
+                  className="absolute w-16 h-16 bg-purple-400 rounded-full flex items-center justify-center cursor-move"
+                  style={{ left: '50%', top: '50%', marginLeft: '-32px', marginTop: '-32px' }}
+                  onClick={() => setIsWishDetailsVisible(!isWishDetailsVisible)}
+                >
+                  <span className="text-2xl">🌼</span>
+                </motion.div>
+                <AnimatePresence>
+                  {isWishDetailsVisible && (
+                    <motion.div
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: 10 }}
+                      className="absolute w-48 bg-white rounded-lg p-2 shadow-xl z-10"
+                      style={{
+                        left: '50%',
+                        bottom: '120%',
+                        transform: 'translateX(-50%)',
+                      }}
+                    >
+                      <p className="text-gray-800 text-sm font-medium mb-2">{wishText}</p>
+                      <div className="text-xs text-gray-500 mt-1">Category: {category}</div>
+                      <div className="mt-2 flex justify-between items-center">
+                        <span className="text-xs text-purple-600">✨ +5 XP</span>
+                        <button 
+                          className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600 transition-colors duration-200"
+                        >
+                          Support
+                        </button>
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+              <p className="text-sm text-gray-600 mb-6">
+                You can interact with wishes just like this in your wish garden!
+              </p>
+              <button
+                onClick={handleNextStep}
+                className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition duration-300"
+              >
+                Next
+              </button>
             </motion.div>
-            <button
-              onClick={handleNextStep}
-              className="bg-purple-600 text-white px-6 py-2 rounded-full hover:bg-purple-700 transition duration-300"
-            >
-              Next
-            </button>
-          </motion.div>
-        );
+          );
 
       case 'gardenView':
         return (
