@@ -88,4 +88,3 @@ secrets:
     external: true
   supabase_key:
     external: true
-    
