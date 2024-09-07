@@ -18,12 +18,6 @@ services:
       rollback_config:
         parallelism: 1
         order: stop-first
-    healthcheck:
-      test: ["CMD", "nginx", "-t"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     networks:
       - dandywishes_local
 
@@ -69,12 +63,6 @@ services:
       rollback_config:
         parallelism: 1
         order: stop-first
-    healthcheck:
-      test: ["CMD", "curl", "-f", "http://localhost:9000/api/status"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
     networks:
       - dandywishes_local
 
