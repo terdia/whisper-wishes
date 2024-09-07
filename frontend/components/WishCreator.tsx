@@ -6,6 +6,7 @@ import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import Link from 'next/link';
 import Confetti from 'react-confetti';
 import { syncLocalWishes } from '../utils/wishSync';
+import { toast } from 'react-toastify';
 
 interface Wish {
   id: string;
@@ -27,9 +28,7 @@ const WishCreator: React.FC = () => {
   const [isPrivate, setIsPrivate] = useState(false);
   const [wishes, setWishes] = useState<Wish[]>([]);
   const containerRef = useRef<HTMLDivElement>(null);
-  const { user } = useAuth();
-  const [xp, setXp] = useState(0);
-  const [level, setLevel] = useState(1);
+  const { user, userStats, updateUserStats } = useAuth();
   const [showConfetti, setShowConfetti] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(false);
@@ -78,46 +77,71 @@ const WishCreator: React.FC = () => {
       is_visible: true // Default to true
     };
 
-    if (user) {
-      // Create wish in database for authenticated users
-      const { data, error } = await supabase
-        .from('wishes')
-        .insert({
-          wish_text: wishText,
-          user_id: user.id,
-          category,
-          is_private: isPrivate,
-          is_visible: true
-        })
-        .select()
-        .single();
+    try {
+      if (user) {
+        // Create wish in database for authenticated users
+        const { data, error } = await supabase
+          .from('wishes')
+          .insert({
+            wish_text: wishText,
+            user_id: user.id,
+            category,
+            is_private: isPrivate,
+            is_visible: true
+          })
+          .select()
+          .single();
 
-      if (error) {
-        console.error('Error creating wish:', error);
-        return;
+        if (error) {
+          console.error('Error creating wish:', error);
+          return;
+        }
+
+        newWish.id = data.id;
+
+        // Award XP for creating a wish
+        const { data: xpData, error: xpError } = await supabase.rpc('update_xp_and_level', {
+          p_user_id: user.id,
+          p_xp_gained: 10
+        });
+
+        if (xpError) {
+          console.error('Error awarding XP:', xpError);
+          throw xpError;
+        } 
+
+        if (xpData) {
+          updateUserStats({
+            xp: xpData.new_xp,
+            level: xpData.new_level
+          });
+        }
+
+      } else {
+        // Store wish in local storage for non-authenticated users
+        const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
+        newWish.id = Date.now().toString(); // Use timestamp as ID for local wishes
+        localWishes.push(newWish);
+        localStorage.setItem('localWishes', JSON.stringify(localWishes));
       }
 
-      newWish.id = data.id;
-    } else {
-      // Store wish in local storage for non-authenticated users
-      const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
-      newWish.id = Date.now().toString(); // Use timestamp as ID for local wishes
-      localWishes.push(newWish);
-      localStorage.setItem('localWishes', JSON.stringify(localWishes));
-    }
+       // Award XP for creating a wish
+       const xpGained = 10;
+       const currentXp = userStats?.xp || 0;
+       const newXp = currentXp + xpGained;
+ 
+       await updateUserStats({ xp: newXp });
 
-    setWishes([...wishes, newWish]);
-    setWishText('');
-    setCategory('');
-    setIsPrivate(false);
-
-    setXp(prevXp => {
-      const newXp = prevXp + 5;
-      if (newXp >= level * 10) {
-        setLevel(prevLevel => prevLevel + 1);
-      }
-      return newXp;
-    });
+      setWishes([...wishes, newWish]);
+      setWishText('');
+      setCategory('');
+      setIsPrivate(false);
+      setIsControlsVisible(false);
+      toast.success(`Wish created successfully! You earned ${xpGained} XP.`);
+    } catch (error) {
+      console.error('Error creating wish:', error);
+      toast.error('Failed to create wish. Please try again.');
+    } 
   };
 
   const blowWishes = async () => {
@@ -190,10 +214,10 @@ const WishCreator: React.FC = () => {
       <header className="mb-6">
         <div className="flex justify-center items-center space-x-4">
           <div className="bg-white bg-opacity-30 px-4 py-2 rounded-full text-white font-semibold">
-            Level {level}
+            Level {userStats?.level || 1}
           </div>
           <div className="bg-white bg-opacity-30 px-4 py-2 rounded-full text-white font-semibold">
-            {xp} XP
+            {userStats?.xp || 0} XP
           </div>
           <button className="bg-white bg-opacity-30 p-3 rounded-full">
             <User size={24} className="text-white" />
@@ -403,7 +427,7 @@ const DraggableWish: React.FC<DraggableWishProps> = ({ wish, containerRef }) => 
             <p className="text-gray-800 text-sm font-medium mb-2">{wish.text}</p>
             <div className="text-xs text-gray-500 mt-1">Category: {wish.category}</div>
             <div className="mt-2 flex justify-between items-center">
-              <span className="text-xs text-purple-600">✨ +5 XP</span>
+              <span className="text-xs text-purple-600">✨ 10 XP</span>
               <button 
                 className="bg-purple-500 text-white text-xs px-2 py-1 rounded hover:bg-purple-600 transition-colors duration-200"
                 onClick={(e) => {

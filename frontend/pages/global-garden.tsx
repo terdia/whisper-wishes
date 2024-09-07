@@ -249,24 +249,86 @@ const GlobalWishGarden: React.FC = () => {
     }
 
     try {
+      // First, check if the user has already supported this wish
+      const { data: existingSupport, error: supportCheckError } = await supabase
+        .from('wish_supports')
+        .select('id')
+        .eq('user_id', user.id)
+        .eq('wish_id', wishId)
+        .single();
+
+      if (supportCheckError && supportCheckError.code !== 'PGRST116') {
+        // PGRST116 means no rows returned, which is expected if user hasn't supported yet
+        throw supportCheckError;
+      }
+
+      if (existingSupport) {
+        toast.info('You have already watered this wish');
+        return;
+      }
+
       const { data, error } = await supabase
         .rpc('support_wish', { p_user_id: user.id, p_wish_id: wishId });
 
       if (error) throw error;
 
       if (data) {
-        toast.success('Wish watered successfully!');
+        // Award XP for supporting a wish
+        const { data: xpData, error: xpError } = await supabase.rpc('update_xp_and_level', {
+          p_user_id: user.id,
+          p_xp_gained: 5
+        });
+
+        if (xpError) throw xpError;
+
+        // Award XP to the wish creator
+        // First, check if the creator has user_stats
+        const { data: creatorStats, error: creatorStatsError } = await supabase
+            .from('user_stats')
+            .select('user_id')
+            .eq('user_id', wishToWater.user_id)
+            .single();
+
+        if (creatorStatsError && creatorStatsError.code !== 'PGRST116') {
+          throw creatorStatsError;
+        }       
+
+        if (!creatorStats) {
+          // Create user_stats for the creator if it doesn't exist
+          const { error: createStatsError } = await supabase
+            .from('user_stats')
+            .insert({
+              user_id: wishToWater.user_id,   
+              xp: 3,
+              level: 1,
+              last_login: new Date().toISOString(),
+              login_streak: 1
+            });
+
+          if (createStatsError) throw createStatsError;
+        } else {
+          // Update XP for the creator
+          const { error: creatorXpError } = await supabase.rpc('update_xp_and_level', {
+            p_user_id: wishToWater.user_id,
+            p_xp_gained: 3
+          });
+
+          if (creatorXpError) throw creatorXpError;
+        } 
+
+        toast.success('Wish watered successfully! You earned 5 XP.');
+
         // Update the local state to reflect the change
         setWishes(wishes.map(w => 
-          w.id === wishId ? { ...w, support_count: w.support_count + 1 } : w
-        ));
-      } else {
-        toast.error('You have already watered this wish');
+            w.id === wishId ? { ...w, support_count: w.support_count + 1 } : w
+          ));
+        } else {
+          toast.error('You have already watered this wish');
+        }
+      } catch (error) {
+        console.error('Error watering wish:', error);
+        toast.error('Failed to water wish');
       }
-    } catch (error) {
-      console.error('Error watering wish:', error);
-      toast.error('Failed to water wish');
-    }
   };
 
   if (!user || !userProfile) {
@@ -286,7 +348,7 @@ const GlobalWishGarden: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-8">
+    <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-br from-green-400 to-blue-500 p-8">
       <SEO
         title="Global Wish Garden"
         description="Explore and support wishes from around the world in our Global Wish Garden."
