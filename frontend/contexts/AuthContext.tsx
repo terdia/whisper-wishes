@@ -1,4 +1,4 @@
-import React, { createContext, useState, useEffect, useContext, useCallback, ReactNode } from 'react'
+import React, { createContext, useState, useEffect, useContext } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../utils/supabaseClient'
 import { Session, User } from '@supabase/supabase-js'
@@ -12,16 +12,26 @@ interface UserProfile {
   is_public?: boolean
 }
 
+interface UserStats {
+  user_id: string
+  xp: number
+  level: number
+  login_streak: number
+  last_login: string
+}
+
 interface AuthContextType {
   user: User | null
   session: Session | null
   userProfile: UserProfile | null
+  userStats: UserStats | null
   isLoading: boolean
   signIn: (email: string, password: string) => Promise<void>
   signUp: (email: string, password: string, username: string) => Promise<void>
   signOut: () => Promise<void>
   updateProfile: (data: Partial<UserProfile>) => Promise<void>
   sendMagicLink: (email: string) => Promise<void>
+  updateUserStats: (newStats: Partial<UserStats>) => void 
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -30,6 +40,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null)
   const [session, setSession] = useState<Session | null>(null)
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null)
+  const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
 
@@ -40,6 +51,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setSession(parsedSession)
       setUser(parsedSession.user)
       fetchUserProfile(parsedSession.user.id)
+      fetchUserStats(parsedSession.user.id)
+      updateLoginStreak(parsedSession.user.id)
     }
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
@@ -74,6 +87,80 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   }
 
+  const fetchUserStats = async (userId: string): Promise<void> => {
+    let { data, error } = await supabase
+      .from('user_stats')
+      .select('*')
+      .eq('user_id', userId)
+      .single()
+
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // User stats don't exist, create them
+        const newUserStats: UserStats = {
+          user_id: userId,
+          xp: 0,
+          level: 1,
+          login_streak: 1,
+          last_login: new Date().toISOString()
+        }
+
+        const { data: newData, error: insertError } = await supabase
+          .from('user_stats')
+          .insert(newUserStats)
+          .single()
+
+        if (insertError) {
+          console.error('Error creating user stats:', insertError)
+        } else {
+          data = newData
+        }
+      } else {
+        console.error('Error fetching user stats:', error)
+      }
+    }
+
+    if (data) {
+      setUserStats(data)
+    }
+  }
+
+  const updateUserStats = async (newStats: Partial<UserStats>): Promise<void> => {
+    if (!user) return
+
+    const { data, error } = await supabase
+      .from('user_stats')
+      .update(newStats)
+      .eq('user_id', user.id)
+      .single()
+
+    if (error) {
+      console.error('Error updating user stats:', error)
+      throw error
+    } 
+
+    // Fetch the updated user stats
+    const { data: updatedStats, error: fetchError } = await supabase
+    .from('user_stats')
+    .select('*')
+    .eq('user_id', user.id)
+    .single()
+
+    if (fetchError) throw fetchError
+
+    setUserStats(updatedStats)
+  }
+
+  const updateLoginStreak = async (userId: string): Promise<void> => {
+    const { data, error } = await supabase.rpc('update_login_streak', { p_user_id: userId })
+
+    if (error) {
+      console.error('Error updating login streak:', error)
+    } else if (data) {
+      fetchUserStats(userId)
+    }
+  }
+
   const signIn = async (email: string, password: string): Promise<void> => {
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
@@ -90,9 +177,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         options: {
           data: { username }
         }
-      })
+      });
       
-      if (error) throw error
+      if (error) throw error;
       
       if (data.user) {
         const { error: profileError } = await supabase
@@ -103,20 +190,43 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
             is_public: false,
             is_premium: false
           })
-          .single()
-
+          .single();
+  
         if (profileError) {
-          console.error('Error creating user profile:', profileError)
-          throw profileError
+          console.error('Error creating user profile:', profileError);
+          throw profileError;
         }
-
-        router.push('/my-wishes')
+  
+        // Create user_stats entry
+        const { error: statsError } = await supabase
+          .from('user_stats')
+          .insert({
+            user_id: data.user.id,
+            xp: 0,
+            level: 1,
+            last_login: new Date().toISOString(),
+            login_streak: 1
+          })
+          .single();
+  
+        if (statsError) {
+          console.error('Error creating user stats:', statsError);
+          throw statsError;
+        }
+  
+        // Update XP for account creation
+        await supabase.rpc('update_xp_and_level', {
+          p_user_id: data.user.id,
+          p_xp_gained: 20
+        });
+  
+        router.push('/my-wishes');
       }
     } catch (error) {
-      console.error('Error during sign up:', error)
-      throw error
+      console.error('Error during sign up:', error);
+      throw error;
     }
-  }
+  };
 
   const signOut = async (): Promise<void> => {
     await supabase.auth.signOut()
@@ -151,11 +261,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     <AuthContext.Provider value={{ 
       user, 
       userProfile, 
+      userStats,
       session, 
       signIn, 
       signUp, 
       signOut, 
       updateProfile, 
+      updateUserStats,
       isLoading,
       sendMagicLink
     }}>

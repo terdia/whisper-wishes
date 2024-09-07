@@ -32,7 +32,7 @@ ChartJS.register(
 );
 
 const Profile = () => {
-  const { user, userProfile, updateProfile, isLoading: authLoading } = useAuth();
+  const { user, userProfile, userStats, updateProfile, isLoading: authLoading } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [localProfile, setLocalProfile] = useState({
@@ -61,6 +61,23 @@ const Profile = () => {
   } else {
     avatarUrl = null;
   }
+
+  const calculateXPProgress = () => {
+    if (!userStats) return 0;
+    const currentLevel = userStats.level || 1;
+    const currentXP = userStats.xp || 0;
+    
+    if (currentLevel === 1) {
+      // For level 1, progress is simply currentXP / XP needed for level 2
+      const xpForNextLevel = 100 * Math.pow(2, 1.5);
+      return Math.min(currentXP / xpForNextLevel, 1);
+    } else {
+      const xpForCurrentLevel = 100 * Math.pow(currentLevel, 1.5);
+      const xpForNextLevel = 100 * Math.pow(currentLevel + 1, 1.5);
+      const xpProgress = (currentXP - xpForCurrentLevel) / (xpForNextLevel - xpForCurrentLevel);
+      return Math.min(Math.max(xpProgress, 0), 1);
+    }
+  };
 
   const fetchUserData = useCallback(async () => {
     if (!user) return;
@@ -411,6 +428,42 @@ const Profile = () => {
             <p className="text-lg">Wishes Supported</p>
           </div>
         </div>
+      </div>
+
+      <div className="mt-8">
+        <h2 className="text-3xl font-bold mb-6 text-gray-800">Your XP Statistics</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="bg-gradient-to-br from-indigo-400 to-indigo-600 text-white p-6 rounded-lg shadow-md">
+            <p className="text-4xl font-bold">{userStats?.level || 1}</p>
+            <p className="text-lg">Current Level</p>
+          </div>
+          <div className="bg-gradient-to-br from-pink-400 to-pink-600 text-white p-6 rounded-lg shadow-md">
+            <p className="text-4xl font-bold">{userStats?.xp || 0}</p>
+            <p className="text-lg">Total XP</p>
+          </div>
+          <div className="bg-gradient-to-br from-yellow-400 to-yellow-600 text-white p-6 rounded-lg shadow-md">
+            <p className="text-4xl font-bold">{userStats?.login_streak || 0}</p>
+            <p className="text-lg">Login Streak</p>
+          </div>
+        </div>
+    </div>
+
+      <div className="mt-8">
+        <h3 className="text-2xl font-semibold mb-4 text-gray-800">XP Progress</h3>
+        <div className="bg-gray-200 rounded-full h-6 overflow-hidden">
+          <div 
+            className="h-full rounded-full transition-all duration-500 ease-out bg-gradient-to-r from-blue-500 to-purple-500 flex items-center justify-center text-white text-xs"
+            style={{ 
+              width: `${Math.max(calculateXPProgress() * 100, 1)}%`,
+              minWidth: '1%'
+            }}
+          >
+            {(calculateXPProgress() * 100).toFixed(2)}%
+          </div>
+        </div>
+        <p className="mt-2 text-gray-600">
+          {userStats?.xp || 0} XP / {Math.ceil(100 * Math.pow((userStats?.level || 1) + 1, 1.5))} XP to next level
+        </p>      
       </div>
      
       <div className="mt-12 bg-white rounded-xl shadow-lg p-8">

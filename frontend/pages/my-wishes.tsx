@@ -29,7 +29,7 @@ const themes = {
 }
 
 const MyWishes: React.FC = () => {
-  const { user, userProfile, isLoading: authLoading } = useAuth()
+  const { user, userProfile, isLoading: authLoading, updateUserStats } = useAuth()
   const [wishes, setWishes] = useState<Wish[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState('nightSky')
@@ -99,20 +99,53 @@ const MyWishes: React.FC = () => {
   }
 
   const updateWish = async (updatedWish: Wish) => {
-    const { error } = await supabase
-      .from('wishes')
-      .update(updatedWish)
-      .match({ id: updatedWish.id })
+    if (!user) return;
 
-    if (error) {
-      console.error('Error updating wish:', error)
-      toast.error('Failed to update wish')
-    } else {
-      setWishes(wishes.map(wish => wish.id === updatedWish.id ? updatedWish : wish))
-      setEditingWish(null)
-      toast.success('Wish updated successfully')
+    try {
+      const { data: oldWishData, error: fetchError } = await supabase
+        .from('wishes')
+        .select('is_private')
+        .eq('id', updatedWish.id)
+        .single();
+
+      if (fetchError) throw fetchError;
+
+      const { error } = await supabase
+        .from('wishes')
+        .update(updatedWish)
+        .match({ id: updatedWish.id });
+
+      if (error) throw error;
+
+      setWishes(wishes.map(wish => wish.id === updatedWish.id ? updatedWish : wish));
+      setEditingWish(null);
+
+      // Check if the wish was made public
+      if (oldWishData.is_private && !updatedWish.is_private) {
+        // Award XP for making the wish public
+        const { data: xpData, error: xpError } = await supabase.rpc('update_xp_and_level', {
+          p_user_id: user.id,
+          p_xp_gained: 15
+        });
+
+        if (xpError) throw xpError;
+
+        if (xpData) {
+          updateUserStats({
+            xp: xpData.new_xp,
+            level: xpData.new_level
+          });
+        }
+
+        toast.success('Wish updated and made public! You earned 15 XP.');
+      } else {
+        toast.success('Wish updated successfully');
+      }
+    } catch (error) {
+      console.error('Error updating wish:', error);
+      toast.error('Failed to update wish');
     }
-  }
+  };
 
   const WishCard: React.FC<{ wish: Wish }> = ({ wish }) => {
     const [editedWish, setEditedWish] = useState(wish)
