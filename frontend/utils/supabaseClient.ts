@@ -22,7 +22,7 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 supabase.from('wishes').select('*', { count: 'exact' }).then(
   ({ data, error }) => {
     if (error) {
-      console.error('Supabase connection error:', error)
+      console.error('Supabase connection error pre-build:', error)
     } else {
       console.log('Supabase connection successful')
     }
