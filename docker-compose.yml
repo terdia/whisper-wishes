@@ -43,6 +43,8 @@ services:
       rollback_config:
         parallelism: 1
         order: stop-first
+    networks:
+      - dandywishes_local
 
   portainer:
     image: portainer/portainer-ce:latest
