@@ -26,6 +26,12 @@ const generateSiteMap = (host: string) => {
      <url>
        <loc>${baseUrl}/magic-link</loc>
      </url>
+     <url>
+       <loc>${baseUrl}/terms-of-service</loc>
+     </url>
+     <url>
+       <loc>${baseUrl}/privacy-policy</loc>
+     </url>
    </urlset>
  `
 }

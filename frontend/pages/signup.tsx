@@ -72,6 +72,24 @@ export default function Signup() {
             />
           </div>
         </div>
+        <div className="flex items-center">
+          <input
+            type="checkbox"
+            id="agreeTerms"
+            required
+            className="h-4 w-4 text-purple-600 focus:ring-purple-500 border-gray-300 rounded"
+          />
+          <label htmlFor="agreeTerms" className="ml-2 block text-sm text-gray-900">
+            I agree to the {' '}
+            <Link href="/terms-of-service">
+              <a className="text-purple-600 hover:underline">Terms of Service</a>
+            </Link>
+            {' '} and {' '}
+            <Link href="/privacy-policy">
+              <a className="text-purple-600 hover:underline">Privacy Policy</a>
+            </Link>
+          </label>
+        </div>
         <button type="submit" className="w-full bg-purple-600 hover:bg-purple-700 text-white font-bold py-3 px-4 rounded-lg transition duration-300">
           Sign Up
         </button>

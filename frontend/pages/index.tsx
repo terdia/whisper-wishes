@@ -4,6 +4,8 @@ import WishCreator from '../components/WishCreator'
 import SEO from '../components/SEO'
 import OnboardingFlow from '../components/OnboardingFlow'
 import { RefreshCw } from 'lucide-react'
+import Link from 'next/link'
+import CookieConsent from '../components/CookieConsent'
 
 const Home: NextPage = () => {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(true);
@@ -94,11 +96,23 @@ const Home: NextPage = () => {
         </div>
       )}
 
-      <footer className="bg-purple-800 text-white py-4 text-center">
-        <p className="text-sm">
-          &copy; {new Date().getFullYear()} Dandy Wishes. All rights reserved.
-        </p>
+      <footer className="bg-purple-800 text-white py-8 text-center">
+        <div className="container mx-auto px-4">
+          <p className="text-sm mb-4">
+            &copy; {new Date().getFullYear()} Dandy Wishes. All rights reserved.
+          </p>
+          <nav className="flex justify-center space-x-4 text-sm">
+            <Link href="/privacy-policy">
+              <a className="hover:underline">Privacy Policy</a>
+            </Link>
+            <Link href="/terms-of-service">
+              <a className="hover:underline">Terms of Service</a>
+            </Link>
+          </nav>
+        </div>
       </footer>
+
+      <CookieConsent />
     </div>
   )
 }
