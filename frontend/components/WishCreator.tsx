@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Wind, Flower, User, Lock, Globe, ChevronDown, PlusCircle, ChevronUp } from 'lucide-react';
+import { Wind, Flower, User, Lock, Globe, ChevronDown, PlusCircle, ChevronUp, Loader } from 'lucide-react';
 import { motion, AnimatePresence, PanInfo } from 'framer-motion';
 import Link from 'next/link';
 import Confetti from 'react-confetti';
@@ -32,6 +32,7 @@ const WishCreator: React.FC = () => {
   const [showConfetti, setShowConfetti] = useState(false);
   const [isExpanded, setIsExpanded] = useState(false);
   const [isControlsVisible, setIsControlsVisible] = useState(false);
+  const [isCreatingWish, setIsCreatingWish] = useState(false);
 
   useEffect(() => {
     if (user) {
@@ -57,29 +58,30 @@ const WishCreator: React.FC = () => {
       setWishes(data.map(wish => ({
         ...wish,
         text: wish.wish_text, 
-        x: Math.random() * 60 + 20, // Keep within 20-80% of container width
-        y: Math.random() * 40 + 30, // Keep within 30-70% of container height
+        x: Math.random() * 60 + 20,
+        y: Math.random() * 40 + 30,
       })));
     }
   };
 
   const createWish = async () => {
-    if (!wishText.trim() || !category) return;
+    if (!wishText.trim() || !category || isCreatingWish) return;
+    
+    setIsCreatingWish(true);
     
     const newWish = {
       text: wishText,
       category: category,
       is_private: isPrivate,
       created_at: new Date().toISOString(),
-      id: '', // Initialize with an empty string
-      x: Math.random() * 60 + 20, // Random x position
-      y: Math.random() * 40 + 30, // Random y position
-      is_visible: true // Default to true
+      id: '',
+      x: Math.random() * 60 + 20,
+      y: Math.random() * 40 + 30,
+      is_visible: true
     };
 
     try {
       if (user) {
-        // Create wish in database for authenticated users
         const { data, error } = await supabase
           .from('wishes')
           .insert({
@@ -93,20 +95,17 @@ const WishCreator: React.FC = () => {
           .single();
 
         if (error) {
-          console.error('Error creating wish:', error);
-          return;
+          throw error;
         }
 
         newWish.id = data.id;
 
-        // Award XP for creating a wish
         const { data: xpData, error: xpError } = await supabase.rpc('update_xp_and_level', {
           p_user_id: user.id,
           p_xp_gained: 10
         });
 
         if (xpError) {
-          console.error('Error awarding XP:', xpError);
           throw xpError;
         } 
 
@@ -118,19 +117,17 @@ const WishCreator: React.FC = () => {
         }
 
       } else {
-        // Store wish in local storage for non-authenticated users
         const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
-        newWish.id = Date.now().toString(); // Use timestamp as ID for local wishes
+        newWish.id = Date.now().toString();
         localWishes.push(newWish);
         localStorage.setItem('localWishes', JSON.stringify(localWishes));
       }
 
-       // Award XP for creating a wish
-       const xpGained = 10;
-       const currentXp = userStats?.xp || 0;
-       const newXp = currentXp + xpGained;
- 
-       await updateUserStats({ xp: newXp });
+      const xpGained = 10;
+      const currentXp = userStats?.xp || 0;
+      const newXp = currentXp + xpGained;
+
+      await updateUserStats({ xp: newXp });
 
       setWishes([...wishes, newWish]);
       setWishText('');
@@ -141,7 +138,9 @@ const WishCreator: React.FC = () => {
     } catch (error) {
       console.error('Error creating wish:', error);
       toast.error('Failed to create wish. Please try again.');
-    } 
+    } finally {
+      setIsCreatingWish(false);
+    }
   };
 
   const blowWishes = async () => {
@@ -151,7 +150,6 @@ const WishCreator: React.FC = () => {
     setShowConfetti(true);
 
     if (user) {
-      // Update is_visible status in the database for authenticated users
       const wishIds = blownWishes.map(wish => wish.id);
       const { error } = await supabase
         .from('wishes')
@@ -162,7 +160,6 @@ const WishCreator: React.FC = () => {
         console.error('Error updating wishes visibility:', error);
       }
     } else {
-      // Update local storage for non-authenticated users
       const localWishes = JSON.parse(localStorage.getItem('localWishes') || '[]');
       const updatedLocalWishes = localWishes.map(wish => {
         const blownWish = blownWishes.find(bw => bw.id === wish.id);
@@ -323,10 +320,17 @@ const WishCreator: React.FC = () => {
                           </div>
                           <button
                             onClick={createWish}
-                            className="bg-purple-600 px-4 py-2 rounded-full text-white font-semibold flex items-center"
+                            disabled={isCreatingWish || !wishText.trim() || !category}
+                            className={`bg-purple-600 px-4 py-2 rounded-full text-white font-semibold flex items-center ${
+                              isCreatingWish || !wishText.trim() || !category ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'
+                            }`}
                           >
-                            <PlusCircle size={20} className="mr-2" />
-                            Make a Wish
+                            {isCreatingWish ? (
+                              <Loader size={20} className="mr-2 animate-spin" />
+                            ) : (
+                              <PlusCircle size={20} className="mr-2" />
+                            )}
+                            {isCreatingWish ? 'Creating...' : 'Make a Wish'}
                           </button>
                         </div>
                         <p className="text-sm text-center text-gray-800">
@@ -343,8 +347,7 @@ const WishCreator: React.FC = () => {
                 <footer className="flex flex-col space-y-3 mt-4">
                   <button 
                     onClick={blowWishes} 
-                    className="bg-pink-400 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-pink-500 transition-all"
-                  >
+                    className="bg-pink-400 px-6 py-3 rounded-full flex items-center justify-center text-white font-semibold hover:bg-pink-500 transition-all" >
                     <Wind className="mr-2" /> Blow Wishes
                   </button>
                   <Link href="/global-garden">
