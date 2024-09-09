@@ -3,18 +3,21 @@ import { motion } from 'framer-motion';
 import { X, User, Calendar, ThumbsUp, Droplet } from 'lucide-react';
 
 interface Wish {
+  id: string;
+  wish_text: string;
+  category: string;
+  user_id: string;
+  support_count: number;
+  is_private: boolean;
+  user_profile: {
     id: string;
-    wish_text: string;
-    category: string;
-    user_id: string;
-    support_count: number;
-    is_private: boolean;
-    user_profile: {
-      id: string;
-      username?: string;
-      avatar_url?: string;
-      is_public?: boolean;
-    };
+    username?: string;
+    avatar_url?: string;
+    is_public?: boolean;
+  };
+  x: number;
+  y: number;
+  z: number;
 }
 
 interface WishModalProps {
