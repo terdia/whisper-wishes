@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { motion, AnimatePresence, useAnimation } from 'framer-motion';
-import { Wind, Droplet } from 'lucide-react';
+import { motion, AnimatePresence, useAnimation, PanInfo } from 'framer-motion';
+import { ZoomIn, ZoomOut, Wind, Droplet } from 'lucide-react';
 
 interface Wish {
   id: string;
@@ -18,6 +18,8 @@ interface DandelionViewProps {
   onWishClick: (wish: Wish) => void;
   onWaterWish: (wishId: string) => void;
   categoryColors: { [key: string]: string };
+  hasMore: boolean;
+  loadMore: () => void;
 }
 
 const DandelionView: React.FC<DandelionViewProps> = ({
@@ -26,99 +28,103 @@ const DandelionView: React.FC<DandelionViewProps> = ({
   onWishClick,
   onWaterWish,
   categoryColors,
+  hasMore,
+  loadMore,
 }) => {
-  const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
+  const [scale, setScale] = useState(1);
+  const [position, setPosition] = useState({ x: 0, y: 0 });
   const containerRef = useRef<HTMLDivElement>(null);
-  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const controls = useAnimation();
 
   useEffect(() => {
-    const updateDimensions = () => {
-      if (containerRef.current) {
-        setDimensions({
-          width: containerRef.current.offsetWidth,
-          height: containerRef.current.offsetHeight,
-        });
-      }
-    };
+    controls.start({ scale, x: position.x, y: position.y });
+  }, [scale, position, controls]);
 
-    updateDimensions();
-    window.addEventListener('resize', updateDimensions);
-    return () => window.removeEventListener('resize', updateDimensions);
-  }, []);
+  const handleZoomIn = () => setScale(prev => Math.min(prev + 0.1, 3));
+  const handleZoomOut = () => setScale(prev => Math.max(prev - 0.1, 0.5));
 
-  const handleWishClick = (wish: Wish) => {
-    setSelectedWish(wish);
-    onWishClick(wish);
-  };
-
-  const handleWaterWish = (wishId: string) => {
-    onWaterWish(wishId);
-    setSelectedWish(null);
+  const handlePan = (event: MouseEvent | TouchEvent | PointerEvent, info: PanInfo) => {
+    setPosition(prev => ({
+      x: prev.x + info.delta.x / scale,
+      y: prev.y + info.delta.y / scale,
+    }));
   };
 
   return (
-    <div
+    <div className="relative w-full h-full overflow-hidden bg-gradient-to-b from-blue-400 to-green-400">
+    <motion.div
       ref={containerRef}
-      className="relative w-full h-[calc(100vh-200px)] overflow-hidden bg-gradient-to-b from-blue-400 to-green-400"
+      className="absolute inset-0"
+      animate={controls}
+      drag
+      dragConstraints={containerRef}
+      onPan={handlePan}
+      style={{ touchAction: 'none' }}
     >
       {wishes.map((wish) => (
         <WishSeed
           key={wish.id}
           wish={wish}
-          onClick={handleWishClick}
+          onClick={() => onWishClick(wish)}
+          onWater={onWaterWish}
           categoryColor={categoryColors[wish.category]}
-          containerDimensions={dimensions}
+          scale={scale}
         />
       ))}
+    </motion.div>
 
-      <AnimatePresence>
-        {selectedWish && (
-          <WishModal
-            wish={selectedWish}
-            onClose={() => setSelectedWish(null)}
-            onWater={handleWaterWish}
-            categoryColor={categoryColors[selectedWish.category]}
-          />
-        )}
-      </AnimatePresence>
-
-      <Fireflies count={20} />
+      <div className="absolute top-4 right-4 flex space-x-2">
+        <button
+          onClick={handleZoomIn}
+          className="bg-white p-2 rounded-full shadow-lg"
+        >
+          <ZoomIn size={24} className="text-green-600" />
+        </button>
+        <button
+          onClick={handleZoomOut}
+          className="bg-white p-2 rounded-full shadow-lg"
+        >
+          <ZoomOut size={24} className="text-green-600" />
+        </button>
+      </div>
 
       {isLoading && <LoadingIndicator />}
+
+      {hasMore && !isLoading && (
+        <button
+          onClick={loadMore}
+          className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-white text-green-600 px-4 py-2 rounded-full shadow-lg"
+        >
+          Load More Wishes
+        </button>
+      )}
     </div>
   );
 };
 
 const WishSeed: React.FC<{
   wish: Wish;
-  onClick: (wish: Wish) => void;
+  onClick: () => void;
+  onWater: (wishId: string) => void;
   categoryColor: string;
-  containerDimensions: { width: number; height: number };
-}> = ({ wish, onClick, categoryColor, containerDimensions }) => {
-  const controls = useAnimation();
-
-  useEffect(() => {
-    controls.start({
-      x: wish.x * containerDimensions.width,
-      y: wish.y * containerDimensions.height,
-      transition: {
-        type: 'spring',
-        stiffness: 100,
-        damping: 10,
-        mass: 0.5,
-      },
-    });
-  }, [wish, containerDimensions, controls]);
+  scale: number;
+}> = ({ wish, onClick, onWater, categoryColor, scale }) => {
+  const [isHovered, setIsHovered] = useState(false);
 
   return (
     <motion.div
       className="absolute cursor-pointer"
-      style={{ left: 0, top: 0 }}
-      animate={controls}
-      whileHover={{ scale: 1.1, zIndex: 10 }}
-      onClick={() => onClick(wish)}
+      style={{
+        left: `${wish.x * 100}%`,
+        top: `${wish.y * 100}%`,
+        zIndex: isHovered ? 10 : 1,
+      }}
+      whileHover={{ scale: 1.1 }}
+      onHoverStart={() => setIsHovered(true)}
+      onHoverEnd={() => setIsHovered(false)}
+      onClick={onClick}
     >
-      <svg width="40" height="40" viewBox="0 0 40 40">
+      <svg width={40 / scale} height={40 / scale} viewBox="0 0 40 40">
         <circle cx="20" cy="20" r="18" fill={categoryColor} />
         <motion.g
           animate={{
@@ -139,80 +145,35 @@ const WishSeed: React.FC<{
           ))}
         </motion.g>
       </svg>
-    </motion.div>
-  );
-};
-
-const WishModal: React.FC<{
-  wish: Wish;
-  onClose: () => void;
-  onWater: (wishId: string) => void;
-  categoryColor: string;
-}> = ({ wish, onClose, onWater, categoryColor }) => {
-  return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-      onClick={onClose}
-    >
-      <motion.div
-        initial={{ scale: 0.9, y: 20 }}
-        animate={{ scale: 1, y: 0 }}
-        exit={{ scale: 0.9, y: 20 }}
-        className="bg-white rounded-lg p-6 max-w-sm w-full shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <h3 className="text-xl font-semibold mb-2" style={{ color: categoryColor }}>
-          {wish.category}
-        </h3>
-        <p className="text-gray-700 mb-4">{wish.wish_text}</p>
-        <div className="flex justify-between items-center">
-          <span className="text-sm text-gray-500">Waters: {wish.support_count}</span>
-          <button
-            onClick={() => onWater(wish.id)}
-            className="bg-blue-500 text-white px-4 py-2 rounded-full hover:bg-blue-600 transition-colors flex items-center"
+      
+      <AnimatePresence>
+        {isHovered && (
+          <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: 10 }}
+            className="absolute left-1/2 bottom-full mb-2 w-48 bg-white rounded-lg p-2 shadow-xl"
+            style={{ transform: 'translateX(-50%)' }}
+            onClick={(e) => e.stopPropagation()}
           >
-            <Droplet size={18} className="mr-2" />
-            Water this wish
-          </button>
-        </div>
-      </motion.div>
+            <p className="text-sm font-medium text-gray-800 mb-1 truncate">{wish.wish_text}</p>
+            <div className="flex justify-between items-center">
+              <span className="text-xs text-gray-500">Waters: {wish.support_count}</span>
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWater(wish.id);
+                }}
+                className="bg-blue-500 text-white text-xs px-2 py-1 rounded-full hover:bg-blue-600 transition-colors flex items-center"
+              >
+                <Droplet size={12} className="mr-1" />
+                Water
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </motion.div>
-  );
-};
-
-const Fireflies: React.FC<{ count: number }> = ({ count }) => {
-  return (
-    <>
-      {[...Array(count)].map((_, i) => (
-        <motion.div
-          key={i}
-          className="absolute rounded-full bg-yellow-300 opacity-75"
-          initial={{
-            x: Math.random() * 100 + '%',
-            y: Math.random() * 100 + '%',
-            scale: Math.random() * 0.5 + 0.5,
-          }}
-          animate={{
-            x: Math.random() * 100 + '%',
-            y: Math.random() * 100 + '%',
-            opacity: [0.4, 0.8, 0.4],
-            scale: [1, 1.2, 1],
-          }}
-          transition={{
-            duration: Math.random() * 10 + 10,
-            repeat: Infinity,
-            repeatType: 'reverse',
-          }}
-          style={{
-            width: '4px',
-            height: '4px',
-          }}
-        />
-      ))}
-    </>
   );
 };
 

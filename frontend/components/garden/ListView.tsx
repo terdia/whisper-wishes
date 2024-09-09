@@ -14,8 +14,8 @@ interface ListViewProps {
   onWishClick: (wish: Wish) => void;
   onWaterWish: (wishId: string) => void;
   categoryColors: { [key: string]: string };
-  currentPage: number;
-  wishesPerPage: number;
+  hasMore: boolean;
+  loadMore: () => void;
 }
 
 const ListView: React.FC<ListViewProps> = ({
@@ -23,40 +23,37 @@ const ListView: React.FC<ListViewProps> = ({
   onWishClick,
   onWaterWish,
   categoryColors,
-  currentPage,
-  wishesPerPage
+  hasMore,
+  loadMore
 }) => {
-  const startIndex = (currentPage - 1) * wishesPerPage;
-  const visibleWishes = wishes.slice(startIndex, startIndex + wishesPerPage);
-
   return (
-    <motion.div
-      initial={{ opacity: 0 }}
-      animate={{ opacity: 1 }}
-      exit={{ opacity: 0 }}
-      className="space-y-4"
-    >
-      {visibleWishes.map((wish) => (
+    <div className="space-y-4 p-4">
+      {wishes.map((wish) => (
         <motion.div
           key={wish.id}
           layoutId={`wish-${wish.id}`}
-          className="bg-white rounded-lg shadow-md overflow-hidden"
+          className="bg-white rounded-lg shadow-md overflow-hidden cursor-pointer"
           whileHover={{ scale: 1.02, boxShadow: "0px 5px 15px rgba(0,0,0,0.1)" }}
+          onClick={() => onWishClick(wish)}
         >
-          <div className="flex items-center p-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center p-4">
             <div 
-              className="w-2 h-12 mr-4 rounded-full" 
+              className="w-full sm:w-2 h-2 sm:h-12 mb-2 sm:mb-0 sm:mr-4 rounded-full" 
               style={{ backgroundColor: categoryColors[wish.category] }}
             />
-            <div className="flex-grow">
-              <h3 className="font-semibold mb-1 text-gray-800">{wish.wish_text}</h3>
+            <div className="flex-grow mb-2 sm:mb-0">
+              <h3 className="font-semibold text-gray-800 truncate" title={wish.wish_text}>{wish.wish_text}</h3>
               <p className="text-sm text-gray-600">Category: {wish.category}</p>
             </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-sm text-gray-500">Waters: {wish.support_count}</span>
+            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-2 sm:mt-0">
+              <span className="text-sm text-gray-500 mr-2">Waters: {wish.support_count}</span>
               <button
-                onClick={() => onWaterWish(wish.id)}
+                onClick={(e) => {
+                  e.stopPropagation();
+                  onWaterWish(wish.id);
+                }}
                 className="bg-blue-500 text-white px-3 py-1 rounded-full text-sm hover:bg-blue-600 transition-colors flex items-center"
+                title="Water this wish"
               >
                 <Droplet size={14} className="mr-1" />
                 Water
@@ -65,7 +62,15 @@ const ListView: React.FC<ListViewProps> = ({
           </div>
         </motion.div>
       ))}
-    </motion.div>
+      {hasMore && (
+        <button
+          onClick={loadMore}
+          className="w-full mt-4 bg-green-500 text-white px-4 py-2 rounded-full hover:bg-green-600 transition-colors"
+        >
+          Load More Wishes
+        </button>
+      )}
+    </div>
   );
 };
 
