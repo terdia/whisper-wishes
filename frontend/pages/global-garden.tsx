@@ -5,6 +5,7 @@ import { wishCache } from '../utils/wishCache';
 import { toast } from 'react-toastify';
 import { Search, Info, Filter, Grid, List, Flower } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
+import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
 import SEO from '../components/SEO';
 import DandelionView from '../components/garden/DandelionView';
 import GridView from '../components/garden/GridView';
@@ -133,11 +134,23 @@ const GlobalWishGarden: React.FC = () => {
   };
 
   if (!user || !userProfile) {
+    return (
+      <>
+        <SEO
+          title="Global Wish Garden - Join Our Community"
+          description="Explore and support wishes from around the world in our Global Wish Garden. Sign up or log in to participate!"
+        />
+        <UnauthenticatedUserPrompt />
+      </>
+    );
+  }
+
+  if (authLoading || isLoading) {
     return <LoadingSpinner fullScreen />;
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-4 sm:p-8 flex flex-col">
+    <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-4 sm:p-8 flex flex-col flex-grow">
       <SEO
         title="Global Wish Garden"
         description="Explore and support wishes from around the world in our Global Wish Garden."
@@ -227,7 +240,7 @@ const GlobalWishGarden: React.FC = () => {
           )}
         </AnimatePresence>
 
-       <div className="flex-grow">
+       <div className="flex-grow overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
             key={viewMode}
@@ -280,6 +293,9 @@ const GlobalWishGarden: React.FC = () => {
         />
       )}
 
+         {/* Garden Floor */}
+      <div className="fixed bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-green-800 to-transparent pointer-events-none" />
+
       {displayedWishes.length === 0 && !isLoading && (
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -292,6 +308,7 @@ const GlobalWishGarden: React.FC = () => {
       )}
     </div>
   );
+
 };
 
 export default GlobalWishGarden;
