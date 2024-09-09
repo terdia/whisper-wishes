@@ -25,6 +25,9 @@ interface Wish {
     avatar_url?: string;
     is_public?: boolean;
   };
+  x: number;
+  y: number;
+  z: number;
 }
 
 const categoryColors: { [key: string]: string } = {
@@ -61,10 +64,16 @@ const GlobalWishGarden: React.FC = () => {
   const loadWishes = useCallback(async () => {
     if (!user) return;
     setIsLoading(true);
-    const wishes = await wishCache.fetchAllWishes(user.id, sortOrder, selectedCategory, searchTerm);
-    setAllWishes(wishes);
-    setDisplayedWishes(wishes.slice(0, wishesPerPage));
-    setHasMore(wishes.length > (page + 1) * wishesPerPage);
+    const fetchedWishes = await wishCache.fetchAllWishes(user.id, sortOrder, selectedCategory, searchTerm);
+    const wishesWithCoordinates = fetchedWishes.map(wish => ({
+      ...wish,
+      x: Math.random() * 100,
+      y: Math.random() * 100,
+      z: Math.random() * 100
+    }));
+    setAllWishes(wishesWithCoordinates);
+    setDisplayedWishes(wishesWithCoordinates.slice(0, wishesPerPage));
+    setHasMore(wishesWithCoordinates.length > (page + 1) * wishesPerPage);
     setIsLoading(false);
   }, [user, sortOrder, selectedCategory, searchTerm]);
 
