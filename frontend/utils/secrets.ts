@@ -1,0 +1,4 @@
+
+// secrets.ts
+export const SUPABASE_URL = 'https://nkiihhvzbpgylqarnhls.supabase.co';
+export const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im5raWloaHZ6YnBneWxxYXJuaGxzIiwicm9sZSI6ImFub24iLCJpYXQiOjE3MjUxMzEwNzgsImV4cCI6MjA0MDcwNzA3OH0.IqR7KFrcvdoFVcH4AayO5Y-UW2qE-1rLuTcJ9KPEY10';
