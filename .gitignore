@@ -10,3 +10,4 @@ backend/
 frontend/Dockerfile.dev
 proxy/nginx.dev.conf
 docker-compose.prod.yml
+.vscode/

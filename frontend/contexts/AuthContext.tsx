@@ -171,57 +171,78 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, username: string): Promise<void> => {
     try {
+      // Attempt to sign up the user
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
-          data: { username }
+          data: { username },
+          emailRedirectTo: `${window.location.origin}/welcome`
         }
       });
       
-      if (error) throw error;
+      if (error) {
+        // If Confirm email is disabled, this error will be thrown for existing users
+        if (error.message === 'User already registered') {
+          throw new Error('Email already in use');
+        }
+        throw error;
+      }
       
-      if (data.user) {
-        const { error: profileError } = await supabase
-          .from('user_profiles')
-          .insert({ 
-            id: data.user.id, 
-            username: username,
-            is_public: false,
-            is_premium: false
-          })
-          .single();
+      if (!data.user) {
+        throw new Error('User creation failed');
+      }
   
-        if (profileError) {
-          console.error('Error creating user profile:', profileError);
-          throw profileError;
-        }
+      // Check if the user already exists (Confirm email enabled case)
+      if (data.user.identities && data.user.identities.length === 0) {
+        throw new Error('Email already in use');
+      }
   
-        // Create user_stats entry
-        const { error: statsError } = await supabase
-          .from('user_stats')
-          .insert({
-            user_id: data.user.id,
-            xp: 0,
-            level: 1,
-            last_login: new Date().toISOString(),
-            login_streak: 1
-          })
-          .single();
+      // Proceed with creating user profile, stats, and onboarding entry
+      const { error: profileError } = await supabase
+        .from('user_profiles')
+        .insert({ 
+          id: data.user.id, 
+          username: username,
+          is_public: false,
+          is_premium: false
+        })
+        .single();
   
-        if (statsError) {
-          console.error('Error creating user stats:', statsError);
-          throw statsError;
-        }
+      if (profileError) {
+        await supabase.auth.admin.deleteUser(data.user.id);
+        throw new Error('Failed to create user profile');
+      }
   
-        // Update XP for account creation
-        await supabase.rpc('update_xp_and_level', {
-          p_user_id: data.user.id,
-          p_xp_gained: 20
+      // Create user stats
+      const { error: statsError } = await supabase
+        .from('user_stats')
+        .insert({
+          user_id: data.user.id,
+          xp: 0,
+          level: 1,
+          last_login: new Date().toISOString(),
+          login_streak: 1
         });
   
-        router.push('/my-wishes');
+      if (statsError) {
+        await supabase.auth.admin.deleteUser(data.user.id);
+        throw new Error('Failed to create user stats');
       }
+  
+      // Create user onboarding entry
+      const { error: onboardingError } = await supabase
+        .from('user_onboarding')
+        .insert({
+          user_id: data.user.id,
+          welcome_screen_viewed: false
+        });
+    
+      if (onboardingError) {
+        await supabase.auth.admin.deleteUser(data.user.id);
+        throw new Error('Failed to create user onboarding');
+      }
+  
     } catch (error) {
       console.error('Error during sign up:', error);
       throw error;

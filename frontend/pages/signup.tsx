@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, XCircle } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
@@ -10,15 +11,46 @@ export default function Signup() {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { signUp } = useAuth();
+  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signUp(email, password, name);
-      // Handle successful signup (e.g., redirect to dashboard)
+      // Redirect to a "Check your email" page
+      router.push('/check-email');
     } catch (error) {
       console.error('Error signing up:', error);
-      setError('An error occurred during sign up. Please try again.');
+      
+      let errorMessage = 'An unexpected error occurred during sign up. Please try again.';
+  
+      if (error instanceof Error) {
+        switch(error.message) {
+          case 'Email already in use':
+            errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+            break;
+          case 'Failed to create user profile':
+            errorMessage = 'There was an issue creating your profile. Please try again.';
+            break;
+          case 'Failed to create user stats':
+            errorMessage = 'There was an issue setting up your account stats. Please try again.';
+            break;
+          case 'Failed to create user onboarding':
+            errorMessage = 'There was an issue setting up your account. Please try again.';
+            break;
+          case 'User creation failed':
+            errorMessage = 'Failed to create user. Please try again.';
+            break;
+          default:
+            if (error.message.includes('password')) {
+              errorMessage = 'Password should be at least 6 characters long.';
+            } else if (error.message.includes('email')) {
+              errorMessage = 'Please enter a valid email address.';
+            }
+        }
+      }
+  
+      setError(errorMessage);
       setIsModalOpen(true);
     }
   };

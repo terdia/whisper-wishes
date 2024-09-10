@@ -22,7 +22,11 @@
     "react-chartjs-2": "^5.2.0",
     "chart.js": "^4.4.4",
     "react-confetti": "^6.1.0",
-    "react-toastify": "^10.0.5"
+    "react-toastify": "^10.0.5",
+    "@stripe/stripe-js": "^1.54.0",
+    "@stripe/react-stripe-js": "^2.1.0",
+    "stripe": "^12.9.0",
+    "@headlessui/react": "^1.7.15"
   },
   "devDependencies": {
     "@types/node": "^18.0.0",
