@@ -1,12 +1,12 @@
 // components/amplify/AmplificationManager.ts
 
-import { Amplification, UserSubscription, Wish } from './types';
-import { supabase } from '../../utils/supabaseClient';
+import { Amplification, UserSubscription, Wish } from '../components/amplify/types';
+import { supabase } from '../utils/supabaseClient';
 
 export class AmplificationManager {
   static async amplifyWish(wishId: string, userId: string, userSubscription: UserSubscription): Promise<Amplification | null> {
     try {
-      const amplificationsPerMonth = userSubscription.features.amplifications_per_month;
+      const amplificationsPerMonth = userSubscription.tier === 'premium' ? 'unlimited' : 3;
 
       if (amplificationsPerMonth !== 'unlimited') {
         // Check if the user has used all their amplifications for the current month
@@ -31,7 +31,7 @@ export class AmplificationManager {
         .from('wishes')
         .select('*')
         .eq('id', wishId)
-        .maybeSingle();
+        .single();
 
       if (wishError) throw wishError;
 
@@ -65,7 +65,8 @@ export class AmplificationManager {
   static async getAmplifiedWishes(userId: string | null, page: number = 1, limit: number = 10): Promise<{ amplifiedWishes: Amplification[], totalCount: number, currentPage: number, totalPages: number }> {
     try {
       const offset = (page - 1) * limit;
-
+      const currentDate = new Date().toISOString();
+  
       let query = supabase
         .from('wish_amplifications')
         .select(`
@@ -83,17 +84,25 @@ export class AmplificationManager {
             avatar_url
           )
         `, { count: 'exact' })
-        .order('amplified_at', { ascending: false })
-        .range(offset, offset + limit - 1);
-
+        .gt('expires_at', currentDate) // Only select non-expired amplifications
+        .order('amplified_at', { ascending: false });
+  
       if (userId) {
         query = query.eq('user_id', userId);
       }
-
-      const { data: amplifiedWishes, error, count } = await query;
-
+  
+      // First, get the total count of non-expired amplifications
+      const { count, error: countError } = await query;
+  
+      if (countError) throw countError;
+  
+      // Then, apply pagination
+      query = query.range(offset, offset + limit - 1);
+  
+      const { data: amplifiedWishes, error } = await query;
+  
       if (error) throw error;
-
+  
       return {
         amplifiedWishes,
         totalCount: count,
@@ -104,46 +113,5 @@ export class AmplificationManager {
       console.error('Error fetching amplified wishes:', error);
       throw error;
     }
-  }
-
-  static async isWishAmplified(wishId: string): Promise<boolean> {
-    const currentDate = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('wish_amplifications')
-      .select('*')
-      .eq('wish_id', wishId)
-      .gt('expires_at', currentDate)
-      .maybeSingle();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error checking wish amplification:', error);
-      throw error;
-    }
-
-    return !!data;
-  }
-
-  static async getAmplifiedWishesStatus(wishIds: string[]): Promise<Record<string, boolean>> {
-    const currentDate = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('wish_amplifications')
-      .select('wish_id')
-      .in('wish_id', wishIds)
-      .gt('expires_at', currentDate);
-
-    if (error) {
-      console.error('Error fetching amplified wishes status:', error);
-      throw error;
-    }
-
-    const amplifiedWishesMap = data.reduce((acc, item) => {
-      acc[item.wish_id] = true;
-      return acc;
-    }, {});
-
-    return wishIds.reduce((acc, wishId) => {
-      acc[wishId] = !!amplifiedWishesMap[wishId];
-      return acc;
-    }, {});
   }
 }

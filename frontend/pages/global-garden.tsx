@@ -11,6 +11,7 @@ import DandelionView from '../components/garden/DandelionView';
 import GridView from '../components/garden/GridView';
 import ListView from '../components/garden/ListView';
 import WishModal from '../components/WishModal';
+import AmplifiedWishes from '../components/AmplifiedWishes';
 
 interface Wish {
   id: string;
@@ -136,6 +137,18 @@ const GlobalWishGarden: React.FC = () => {
     setHasMore(allWishes.length > (nextPage + 1) * wishesPerPage);
   };
 
+  const handleSupportWish = async (wishId: string) => {
+    
+    try {
+      // Placeholder: Replace with actual API call
+      
+      toast.success('Wish supported successfully!');
+    } catch (error) {
+      console.error('Error supporting wish:', error);
+      toast.error('Failed to support wish');
+    }
+  };
+
   if (!user || !userProfile) {
     return (
       <>
@@ -242,6 +255,11 @@ const GlobalWishGarden: React.FC = () => {
             </motion.div>
           )}
         </AnimatePresence>
+
+        <div className="mb-8">
+        <h2 className="text-2xl font-bold text-white mb-4">Amplified Wishes</h2>
+          <AmplifiedWishes onSupportWish={handleSupportWish} />
+        </div>
 
        <div className="flex-grow overflow-y-auto">
         <AnimatePresence mode="wait">

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react'
+import React, { useEffect, useState, useMemo, useCallback } from 'react'
 import { supabase } from '../utils/supabaseClient'
 import { useAuth } from '../contexts/AuthContext'
 import { motion, AnimatePresence } from 'framer-motion'
@@ -11,13 +11,16 @@ import { syncLocalWishes } from '../utils/wishSync'
 import { toast } from 'react-toastify'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SEO from '../components/SEO'
+import { Wish as WishType, Milestone } from '../components/amplify/types';
+import { AmplificationManager } from '../components/amplify/AmplificationManager';
+import { ProgressTracker } from '../components/amplify/ProgressTracker'
+import UpgradeModal from '../components/UpgradeModal';
+import { useRouter } from 'next/router';
+import debounce from 'lodash/debounce';
 
-interface Wish {
-  id: string
-  wish_text: string
-  is_private: boolean
-  category: string
-  created_at: string
+interface Wish extends WishType {
+  is_private: boolean;
+  created_at: string;
 }
 
 const localizer = momentLocalizer(moment)
@@ -29,7 +32,7 @@ const themes = {
 }
 
 const MyWishes: React.FC = () => {
-  const { user, userProfile, isLoading: authLoading, updateUserStats } = useAuth()
+  const { user, userProfile, isLoading: authLoading, updateUserStats, userSubscription, fetchUserSubscription } = useAuth()
   const [wishes, setWishes] = useState<Wish[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState('nightSky')
@@ -149,6 +152,25 @@ const MyWishes: React.FC = () => {
 
   const WishCard: React.FC<{ wish: Wish }> = ({ wish }) => {
     const [editedWish, setEditedWish] = useState(wish)
+    const [isAmplifying, setIsAmplifying] = useState(false);
+    const [progress, setProgress] = useState(wish.progress || 0);
+    const [isAmplified, setIsAmplified] = useState(false);
+    const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+    const [isUpdatingProgress, setIsUpdatingProgress] = useState(false);
+    const router = useRouter();
+    const { user } = useAuth();
+
+    useEffect(() => {
+      const checkAmplification = async () => {
+        try {
+          const amplified = await AmplificationManager.isWishAmplified(wish.id);
+          setIsAmplified(amplified);
+        } catch (error) {
+          console.error('Error checking wish amplification:', error);
+        }
+      };
+      checkAmplification();
+    }, [wish.id]);
 
     const handleEdit = () => {
       setEditingWish(wish)
@@ -163,6 +185,80 @@ const MyWishes: React.FC = () => {
     const handleSaveEdit = () => {
       updateWish(editedWish)
     }
+
+    const handleAmplify = async () => {
+      if (isAmplified) {
+        toast.info('This wish is already amplified.');
+        return;
+      }
+  
+      setIsAmplifying(true);
+      try {
+        const amplification = await AmplificationManager.amplifyWish(wish.id, user.id, userSubscription);
+        if (amplification) {
+          setIsAmplified(true);
+          toast.success('Wish amplified successfully!');
+          await fetchUserSubscription(); // Refresh subscription info
+        }
+      } catch (error) {
+        console.error('Error amplifying wish:', error);
+        if (error instanceof Error) {
+          switch (error.message) {
+            case 'No amplifications left':
+              setShowUpgradeModal(true);
+              break;
+            case 'Unauthorized':
+              toast.error('You are not authorized to amplify this wish.');
+              break;
+            default:
+              toast.error(error.message);
+          }
+        } else {
+          toast.error('Failed to amplify wish. Please try again later.');
+        }
+      } finally {
+        setIsAmplifying(false);
+      }
+    };
+
+    const debouncedUpdateProgress = useCallback(
+      debounce(async (newProgress: number) => {
+        if (!user) {
+          toast.error('You need to be logged in to update wish progress.');
+          return;
+        }
+      
+        setIsUpdatingProgress(true);
+        try {
+          const updatedWish = await ProgressTracker.updateProgress(wish.id, newProgress, user.id);
+          setProgress(updatedWish.progress);
+          toast.success('Progress updated successfully!');
+        } catch (error) {
+          console.error('Error updating progress:', error);
+          if (error instanceof Error) {
+            toast.error(error.message);
+          } else {
+            toast.error('Failed to update progress. Please try again later.');
+          }
+          // Revert to the original progress if update fails
+          setProgress(wish.progress || 0);
+        } finally {
+          setIsUpdatingProgress(false);
+        }
+      }, 500),
+      [user, wish.id]
+    );
+  
+    const handleProgressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newProgress = Number(event.target.value);
+      setProgress(newProgress);
+      debouncedUpdateProgress(newProgress);
+    };
+
+    const handleUpgrade = () => {
+      router.push('/subscription');
+      setShowUpgradeModal(false);
+    };
 
     return (
       <motion.div
@@ -244,7 +340,57 @@ const MyWishes: React.FC = () => {
                 {wish.is_private ? 'Private' : 'Public'}
               </span>
             </div>
-            
+
+             {/* Progress bar */}
+              <div className="mt-4 mb-2">
+                <div className="w-full bg-gray-200 rounded-full h-4 relative">
+                  <div 
+                    className="bg-blue-600 h-4 rounded-full transition-all duration-300 ease-in-out"
+                    style={{ width: `${progress}%` }}
+                  />
+                  <span className="absolute inset-0 flex items-center justify-center text-xs font-semibold text-white">
+                    {Math.round(progress)}%
+                  </span>
+                </div>
+                <input 
+                  type="range" 
+                  min="0" 
+                  max="100" 
+                  value={progress} 
+                  onChange={handleProgressChange}
+                  className="w-full mt-2"
+                  disabled={isUpdatingProgress}
+                />
+                <p className="text-sm text-gray-600 mt-1">
+                  Progress: {Math.round(progress)}%
+                  {isUpdatingProgress && <span className="ml-2 text-blue-500">Updating...</span>}
+                </p>
+              </div>
+
+              {/* Add Amplify button */}
+              {!isAmplified && (
+              <button
+                onClick={handleAmplify}
+                disabled={isAmplifying || isAmplified}
+                className={`mt-2 px-4 py-2 rounded-full text-white ${
+                  isAmplifying || isAmplified ? 'bg-gray-400' : 'bg-purple-500 hover:bg-purple-600'
+                } transition-colors duration-200 flex items-center`}
+              >
+                <Wind className="mr-2" size={16} />
+                {isAmplifying ? 'Amplifying...' : 'Amplify Wish'}
+              </button>
+              )}
+              {isAmplified && (
+                <p className="mt-2 text-sm text-purple-600">Amplified</p>
+              )}
+
+              <UpgradeModal
+                isOpen={showUpgradeModal}
+                onClose={() => setShowUpgradeModal(false)}
+                onUpgrade={handleUpgrade}
+                message="You've used all your free amplifications for this month. Upgrade to premium for unlimited amplifications and more features!"
+              />
+                    
             <div className="flex justify-between items-center text-sm text-gray-600 border-t pt-2">
               <div>
                 <span className="mr-2">📅</span>

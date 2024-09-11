@@ -32,6 +32,16 @@ interface AuthContextType {
   updateProfile: (data: Partial<UserProfile>) => Promise<void>
   sendMagicLink: (email: string) => Promise<void>
   updateUserStats: (newStats: Partial<UserStats>) => void 
+  userSubscription: UserSubscription | null;
+  fetchUserSubscription: () => Promise<void>;
+}
+
+interface UserSubscription {
+  tier: 'free' | 'premium';
+  features: {
+    amplifications_per_month: number | 'unlimited';
+    messages_per_wish: number | 'unlimited';
+  };
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
@@ -43,6 +53,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [userStats, setUserStats] = useState<UserStats | null>(null)
   const [isLoading, setIsLoading] = useState(true)
   const router = useRouter()
+  const [userSubscription, setUserSubscription] = useState<UserSubscription | null>(null);
 
   useEffect(() => {
     const storedSession = localStorage.getItem('supabase.auth.token')
@@ -60,9 +71,12 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(session?.user ?? null)
       if (session?.user) {
         fetchUserProfile(session.user.id)
+        fetchUserStats(session.user.id);
+        fetchUserSubscription(session.user.id);
         localStorage.setItem('supabase.auth.token', JSON.stringify(session))
       } else {
         setUserProfile(null)
+        setUserSubscription(null);
         localStorage.removeItem('supabase.auth.token')
       }
       setIsLoading(false)
@@ -72,6 +86,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       subscription.unsubscribe()
     }
   }, [])
+
+  const fetchUserSubscription = async (userId: string): Promise<void> => {
+    const { data, error } = await supabase
+      .from('user_subscriptions')
+      .select('*, subscription_plans(*)')
+      .eq('user_id', userId)
+      .single();
+  
+    if (error) {
+      console.error('Error fetching user subscription:', error);
+    } else if (data) {
+      const subscription: UserSubscription = {
+        tier: data.subscription_plans.name.toLowerCase() === 'Free Tier' ? 'free' : 'premium',
+        features: {
+          amplifications_per_month: data.subscription_plans.features.amplifications_per_month,
+          messages_per_wish: data.subscription_plans.features.messages_per_wish,
+        },
+      };
+      setUserSubscription(subscription);
+    }
+  };
 
   const fetchUserProfile = async (userId: string): Promise<void> => {
     const { data, error } = await supabase
@@ -284,6 +319,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       userProfile, 
       userStats,
       session, 
+      userSubscription,
+      fetchUserSubscription,
       signIn, 
       signUp, 
       signOut, 
