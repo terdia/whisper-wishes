@@ -1,117 +1,109 @@
-// components/amplify/AmplificationManager.ts
+// components/AmplifiedWishes.tsx
 
-import { Amplification, UserSubscription, Wish } from '../components/amplify/types';
-import { supabase } from '../utils/supabaseClient';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { AmplificationManager } from './amplify/AmplificationManager';
+import { Wish } from './amplify/types';
+import { Droplet } from 'lucide-react';
 
-export class AmplificationManager {
-  static async amplifyWish(wishId: string, userId: string, userSubscription: UserSubscription): Promise<Amplification | null> {
-    try {
-      const amplificationsPerMonth = userSubscription.tier === 'premium' ? 'unlimited' : 3;
-
-      if (amplificationsPerMonth !== 'unlimited') {
-        // Check if the user has used all their amplifications for the current month
-        const currentDate = new Date();
-        const firstDayOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
-        
-        const { count, error: amplificationError } = await supabase
-          .from('wish_amplifications')
-          .select('*', { count: 'exact' })
-          .eq('user_id', userId)
-          .gte('amplified_at', firstDayOfMonth.toISOString());
-
-        if (amplificationError) throw amplificationError;
-
-        if (count >= amplificationsPerMonth) {
-          throw new Error('No amplifications left');
-        }
-      }
-
-      // Check if the wish exists and belongs to the user
-      const { data: wishData, error: wishError } = await supabase
-        .from('wishes')
-        .select('*')
-        .eq('id', wishId)
-        .single();
-
-      if (wishError) throw wishError;
-
-      if (wishData.user_id !== userId) {
-        throw new Error('Unauthorized');
-      }
-
-      // Insert a new record into wish_amplifications table
-      const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // Set expiration to 7 days from now
-
-      const { data: amplificationData, error: amplificationError } = await supabase
-        .from('wish_amplifications')
-        .insert({
-          wish_id: wishId,
-          user_id: userId,
-          expires_at: expiresAt.toISOString(),
-        })
-        .select()
-        .single();
-
-      if (amplificationError) throw amplificationError;
-
-      return amplificationData;
-    } catch (error) {
-      console.error('Error amplifying wish:', error);
-      throw error;
-    }
-  }
-
-  static async getAmplifiedWishes(userId: string | null, page: number = 1, limit: number = 10): Promise<{ amplifiedWishes: Amplification[], totalCount: number, currentPage: number, totalPages: number }> {
-    try {
-      const offset = (page - 1) * limit;
-      const currentDate = new Date().toISOString();
-  
-      let query = supabase
-        .from('wish_amplifications')
-        .select(`
-          *,
-          wishes:wishes (
-            id,
-            wish_text,
-            category,
-            user_id,
-            progress,
-            milestones
-          ),
-          user_profiles:user_profiles (
-            username,
-            avatar_url
-          )
-        `, { count: 'exact' })
-        .gt('expires_at', currentDate) // Only select non-expired amplifications
-        .order('amplified_at', { ascending: false });
-  
-      if (userId) {
-        query = query.eq('user_id', userId);
-      }
-  
-      // First, get the total count of non-expired amplifications
-      const { count, error: countError } = await query;
-  
-      if (countError) throw countError;
-  
-      // Then, apply pagination
-      query = query.range(offset, offset + limit - 1);
-  
-      const { data: amplifiedWishes, error } = await query;
-  
-      if (error) throw error;
-  
-      return {
-        amplifiedWishes,
-        totalCount: count,
-        currentPage: page,
-        totalPages: Math.ceil(count / limit)
-      };
-    } catch (error) {
-      console.error('Error fetching amplified wishes:', error);
-      throw error;
-    }
-  }
+// Extended Wish type
+interface ExtendedWish extends Wish {
+  user_profiles: {
+    username: string;
+    avatar_url: string;
+  };
 }
+
+interface AmplifiedWish {
+  id: string;
+  wish_id: string;
+  user_id: string;
+  amplified_at: string;
+  expires_at: string;
+  wishes: ExtendedWish;
+}
+
+interface AmplifiedWishesProps {
+  onSupportWish: (wishId: string) => void;
+}
+
+const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
+  const [amplifiedWishesData, setAmplifiedWishesData] = useState<{
+    amplifiedWishes: AmplifiedWish[];
+    totalCount: number;
+    currentPage: number;
+    totalPages: number;
+  }>({
+    amplifiedWishes: [],
+    totalCount: 0,
+    currentPage: 1,
+    totalPages: 1,
+  });
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const fetchAmplifiedWishes = async () => {
+      setIsLoading(true);
+      try {
+        const data = await AmplificationManager.getAmplifiedWishes(null, 1, 10);
+        setAmplifiedWishesData(data);
+      } catch (error) {
+        console.error('Error fetching amplified wishes:', error);
+        // You might want to toast an error message to the user here
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchAmplifiedWishes();
+  }, []);
+
+  if (isLoading) {
+    return <div className="text-center py-8">Loading amplified wishes...</div>;
+  }
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      {amplifiedWishesData.amplifiedWishes.map((amplifiedWish) => {
+        const wish = amplifiedWish.wishes;
+        return (
+          <motion.div
+            key={amplifiedWish.id}
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="bg-white rounded-lg shadow-lg p-6"
+          >
+            <div className="flex items-center mb-4">
+              <img
+                src={wish.user_profiles.avatar_url}
+                alt={wish.user_profiles.username}
+                className="w-10 h-10 rounded-full mr-3"
+              />
+              <h3 className="text-lg font-semibold">{wish.user_profiles.username}</h3>
+            </div>
+            <h4 className="text-xl font-semibold mb-2">{wish.wish_text}</h4>
+            <p className="text-gray-600 mb-4">Category: {wish.category}</p>
+            <div className="mb-4">
+              <div className="w-full bg-gray-200 rounded-full h-2.5">
+                <div 
+                  className="bg-blue-600 h-2.5 rounded-full" 
+                  style={{ width: `${wish.progress}%` }}
+                ></div>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">Progress: {wish.progress}%</p>
+            </div>
+            <button
+              onClick={() => onSupportWish(wish.id)}
+              className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition-colors duration-200 flex items-center"
+            >
+              <Droplet className="mr-2" size={16} />
+              Support This Wish
+            </button>
+          </motion.div>
+        );
+      })}
+    </div>
+  );
+};
+
+export default AmplifiedWishes;

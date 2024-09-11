@@ -257,7 +257,7 @@ const GlobalWishGarden: React.FC = () => {
         </AnimatePresence>
 
         <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white mb-4">Amplified Wishes</h2>
+        <h2 className="text-2xl font-bold text-white mb-4">Featured Wishes</h2>
           <AmplifiedWishes onSupportWish={handleSupportWish} />
         </div>
 

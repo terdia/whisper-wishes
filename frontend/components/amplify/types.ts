@@ -6,6 +6,7 @@ export interface Wish {
     wish_text: string;
     category: string;
     progress: number;
+    is_private: boolean;
     milestones: Milestone[];
   }
   

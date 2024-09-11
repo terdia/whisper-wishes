@@ -65,6 +65,7 @@ export class AmplificationManager {
   static async getAmplifiedWishes(userId: string | null, page: number = 1, limit: number = 10): Promise<{ amplifiedWishes: Amplification[], totalCount: number, currentPage: number, totalPages: number }> {
     try {
       const offset = (page - 1) * limit;
+      const currentDate = new Date().toISOString();
 
       let query = supabase
         .from('wish_amplifications')
@@ -76,13 +77,16 @@ export class AmplificationManager {
             category,
             user_id,
             progress,
-            milestones
-          ),
-          user_profiles:user_profiles (
-            username,
-            avatar_url
+            milestones,
+            support_count,
+            is_private,
+            user_profiles:user_profiles (
+              username,
+              avatar_url
+            )
           )
         `, { count: 'exact' })
+        .gt('expires_at', currentDate) 
         .order('amplified_at', { ascending: false })
         .range(offset, offset + limit - 1);
 
@@ -104,46 +108,5 @@ export class AmplificationManager {
       console.error('Error fetching amplified wishes:', error);
       throw error;
     }
-  }
-
-  static async isWishAmplified(wishId: string): Promise<boolean> {
-    const currentDate = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('wish_amplifications')
-      .select('*')
-      .eq('wish_id', wishId)
-      .gt('expires_at', currentDate)
-      .maybeSingle();
-
-    if (error && error.code !== 'PGRST116') {
-      console.error('Error checking wish amplification:', error);
-      throw error;
-    }
-
-    return !!data;
-  }
-
-  static async getAmplifiedWishesStatus(wishIds: string[]): Promise<Record<string, boolean>> {
-    const currentDate = new Date().toISOString();
-    const { data, error } = await supabase
-      .from('wish_amplifications')
-      .select('wish_id')
-      .in('wish_id', wishIds)
-      .gt('expires_at', currentDate);
-
-    if (error) {
-      console.error('Error fetching amplified wishes status:', error);
-      throw error;
-    }
-
-    const amplifiedWishesMap = data.reduce((acc, item) => {
-      acc[item.wish_id] = true;
-      return acc;
-    }, {});
-
-    return wishIds.reduce((acc, wishId) => {
-      acc[wishId] = !!amplifiedWishesMap[wishId];
-      return acc;
-    }, {});
   }
 }
