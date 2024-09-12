@@ -11,13 +11,14 @@ import { syncLocalWishes } from '../utils/wishSync'
 import { toast } from 'react-toastify'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SEO from '../components/SEO'
-import { UserSubscription, Wish } from '../components/amplify/types'
+import { Wish } from '../components/amplify/types'
 import { AmplificationManager } from '../components/amplify/AmplificationManager'
 import { ProgressTracker } from '../components/amplify/ProgressTracker'
 import UpgradeModal from '../components/UpgradeModal'
 import { useRouter } from 'next/router'
 import debounce from 'lodash/debounce'
 import WishCard from '../components/WishCard'
+import AmplificationModal from '../components/AmplificationModal'
 
 const localizer = momentLocalizer(moment)
 
@@ -28,7 +29,7 @@ const themes = {
 }
 
 const MyWishes: React.FC = () => {
-  const { user, userProfile, isLoading: authLoading, updateUserStats, userSubscription, fetchUserSubscription } = useAuth()
+  const { user, userProfile, isLoading: authLoading, updateUserStats, fetchUserSubscription } = useAuth()
   const [wishes, setWishes] = useState<Wish[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [theme, setTheme] = useState('nightSky')
@@ -36,10 +37,10 @@ const MyWishes: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<string>('')
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null)
   const [showDeleteModal, setShowDeleteModal] = useState(false)
-  const [editingWish, setEditingWish] = useState<Wish | null>(null)
   const [amplifiedWishes, setAmplifiedWishes] = useState<Set<string>>(new Set())
   const router = useRouter()
   const [showUpgradeModal, setShowUpgradeModal] = useState(false)
+  const [selectedWishForAmplification, setSelectedWishForAmplification] = useState<Wish | null>(null);
 
   useEffect(() => {
     if (user && userProfile && !authLoading) {
@@ -157,42 +158,21 @@ const MyWishes: React.FC = () => {
     }
   }
 
-  const handleEdit = (wish: Wish) => {
-    setEditingWish(wish)
-  }
-
   const handleDelete = (wish: Wish) => {
     setSelectedWish(wish)
     setShowDeleteModal(true)
   }
 
-  const handleAmplify = async (wish: Wish, userSubscription: UserSubscription) => {
-    if (!user) return
-    try {
-      const amplification = await AmplificationManager.amplifyWish(wish.id, user.id, userSubscription)
-      if (amplification) {
-        setAmplifiedWishes(prev => new Set(prev).add(wish.id))
-        toast.success('Wish amplified successfully!')
-        await fetchUserSubscription()
-      }
-    } catch (error) {
-      console.error('Error amplifying wish:', error)
-      if (error instanceof Error) {
-        switch (error.message) {
-          case 'No amplifications left':
-            setShowUpgradeModal(true)
-            break
-          case 'Unauthorized':
-            toast.error('You are not authorized to amplify this wish.')
-            break
-          default:
-            toast.error(error.message)
-        }
-      } else {
-        toast.error('Failed to amplify wish. Please try again later.')
-      }
-    }
-  }
+  const handleAmplify = (wish: Wish) => {
+    setSelectedWishForAmplification(wish);
+  };
+
+  const handleAmplificationComplete = async (amplifiedWish) => {
+    setSelectedWishForAmplification(null);
+    toast.success('Wish amplified successfully!');
+    await fetchUserSubscription(amplifiedWish.user_id);
+    await fetchAmplifiedWishes();
+  };
 
   const handleProgressChange = useCallback(
     debounce(async (wishId: string, newProgress: number) => {
@@ -320,7 +300,7 @@ const MyWishes: React.FC = () => {
                   isAmplified={amplifiedWishes.has(wish.id)}
                   onEdit={updateWish}
                   onDelete={() => handleDelete(wish)}
-                  onAmplify={() => handleAmplify(wish, userSubscription)}
+                  onAmplify={() => handleAmplify(wish)}
                   onProgressChange={(progress) => handleProgressChange(wish.id, progress)}
                   viewMode="grid"
                 />
@@ -342,7 +322,7 @@ const MyWishes: React.FC = () => {
                   isAmplified={amplifiedWishes.has(wish.id)}
                   onEdit={updateWish}
                   onDelete={() => handleDelete(wish)}
-                  onAmplify={() => handleAmplify(wish, userSubscription)}
+                  onAmplify={() => handleAmplify(wish)}
                   onProgressChange={(progress) => handleProgressChange(wish.id, progress)}
                   viewMode="list"
                 />
@@ -433,7 +413,7 @@ const MyWishes: React.FC = () => {
               isAmplified={amplifiedWishes.has(selectedWish.id)}
               onEdit={updateWish}
               onDelete={() => handleDelete(selectedWish)}
-              onAmplify={() => handleAmplify(selectedWish, userSubscription)}
+              onAmplify={() => handleAmplify(selectedWish)}
               onProgressChange={(progress) => handleProgressChange(selectedWish.id, progress)}
               viewMode="grid"
             />
@@ -493,6 +473,27 @@ const MyWishes: React.FC = () => {
         }}
         message="You've used all your free amplifications for this month. Upgrade to premium for unlimited amplifications and more features!"
       />
+
+      {selectedWishForAmplification && (
+        <AmplificationModal
+          isOpen={!!selectedWishForAmplification}
+          onClose={() => setSelectedWishForAmplification(null)}
+          wishId={selectedWishForAmplification.id}
+          isPrivate={selectedWishForAmplification.is_private}
+          onAmplificationComplete={handleAmplificationComplete}
+          onAmplificationError={(error) => {
+            console.error('Error amplifying wish:', error);
+            if (error === 'No amplifications left') {
+              setShowUpgradeModal(true);
+            } else if (error === 'Unauthorized') {
+              toast.error('You are not authorized to amplify this wish.');
+            } else {
+              toast.error(error || 'Failed to amplify wish. Please try again.');
+            }
+            setSelectedWishForAmplification(null);
+          }}
+        />
+      )}
     </div>
   )
 }

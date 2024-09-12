@@ -4,7 +4,13 @@ import { Amplification, UserSubscription, Wish } from './types';
 import { supabase } from '../../utils/supabaseClient';
 
 export class AmplificationManager {
-  static async amplifyWish(wishId: string, userId: string, userSubscription: UserSubscription): Promise<Amplification | null> {
+  static async amplifyWish(
+    wishId: string,
+    userId: string,
+    userSubscription: UserSubscription,
+    objective: 'support' | 'help' | 'mentorship',
+    context?: string
+  ): Promise<Amplification | null> {
     try {
       const amplificationsPerMonth = userSubscription.features.amplifications_per_month;
 
@@ -31,12 +37,21 @@ export class AmplificationManager {
         .from('wishes')
         .select('*')
         .eq('id', wishId)
-        .maybeSingle();
+        .single();
 
       if (wishError) throw wishError;
 
+      if (!wishData) {
+        throw new Error('Wish not found');
+      }
+
       if (wishData.user_id !== userId) {
         throw new Error('Unauthorized');
+      }
+
+      // Update wish visibility if it's private
+      if (wishData.is_private) {
+        await this.updateWishVisibility(wishId, false);
       }
 
       // Insert a new record into wish_amplifications table
@@ -49,6 +64,8 @@ export class AmplificationManager {
           wish_id: wishId,
           user_id: userId,
           expires_at: expiresAt.toISOString(),
+          objective: objective,
+          context: context
         })
         .select()
         .single();
@@ -58,6 +75,18 @@ export class AmplificationManager {
       return amplificationData;
     } catch (error) {
       console.error('Error amplifying wish:', error);
+      throw error;
+    }
+  }
+
+  static async updateWishVisibility(wishId: string, isPrivate: boolean): Promise<void> {
+    const { error } = await supabase
+      .from('wishes')
+      .update({ is_private: isPrivate })
+      .eq('id', wishId);
+
+    if (error) {
+      console.error('Error updating wish visibility:', error);
       throw error;
     }
   }

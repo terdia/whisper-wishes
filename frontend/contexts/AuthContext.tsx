@@ -63,6 +63,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       setUser(parsedSession.user)
       fetchUserProfile(parsedSession.user.id)
       fetchUserStats(parsedSession.user.id)
+      fetchUserSubscription(parsedSession.user.id)
       updateLoginStreak(parsedSession.user.id)
     }
 
@@ -88,6 +89,11 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   }, [])
 
   const fetchUserSubscription = async (userId: string): Promise<void> => {
+    if (!userId) {
+      console.error('Attempted to fetch user subscription with undefined userId');
+      return;
+    }
+
     const { data, error } = await supabase
       .from('user_subscriptions')
       .select('*, subscription_plans(*)')

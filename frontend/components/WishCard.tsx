@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Edit2, Trash2, Wind, ChevronDown, X, Check } from 'lucide-react';
+import { Edit2, Trash2, Wind, ChevronDown, ThumbsUp } from 'lucide-react';
 import { Wish } from '../components/amplify/types';
 
 interface WishCardProps {
@@ -192,13 +192,19 @@ const WishCard: React.FC<WishCardProps> = ({
 
             {/* Footer Section */}
             <div className="flex justify-between items-center text-xs text-gray-500 mt-auto">
-              <div>
-                <span className="mr-1">📅</span>
-                {new Date(wish.created_at).toLocaleDateString()}
+              <div className="flex items-center space-x-4">
+                <div>
+                  <span className="mr-1">📅</span>
+                  {new Date(wish.created_at).toLocaleDateString()}
+                </div>
+                <div>
+                  <span className="mr-1">🏷️</span>
+                  {wish.category}
+                </div>
               </div>
-              <div>
-                <span className="mr-1">🏷️</span>
-                {wish.category}
+              <div className="flex items-center">
+                <ThumbsUp size={14} className="mr-1 text-blue-500" />
+                <span className="text-blue-500 font-medium">{wish.support_count}</span>
               </div>
             </div>
           </>

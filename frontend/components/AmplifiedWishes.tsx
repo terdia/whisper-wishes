@@ -4,7 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import { AmplificationManager } from './amplify/AmplificationManager';
 import { Wish } from './amplify/types';
-import { Droplet } from 'lucide-react';
+import { Droplet, Users, HelpCircle, Briefcase } from 'lucide-react';
 
 // Extended Wish type
 interface ExtendedWish extends Wish {
@@ -62,6 +62,19 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
     return <div className="text-center py-8">Loading amplified wishes...</div>;
   }
 
+  const getObjectiveIcon = (objective: string) => {
+    switch (objective) {
+      case 'support':
+        return <Users className="text-blue-500" size={20} />;
+      case 'help':
+        return <HelpCircle className="text-green-500" size={20} />;
+      case 'mentorship':
+        return <Briefcase className="text-purple-500" size={20} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
       {amplifiedWishesData.amplifiedWishes.map((amplifiedWish) => {
@@ -92,6 +105,15 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
               </div>
               <p className="text-sm text-gray-600 mt-1">Progress: {wish.progress}%</p>
             </div>
+            <div className="mt-4 flex items-center">
+              {getObjectiveIcon(amplifiedWish.objective)}
+              <span className="ml-2 text-sm font-medium">
+                {amplifiedWish.objective.charAt(0).toUpperCase() + amplifiedWish.objective.slice(1)}
+              </span>
+            </div>
+            {amplifiedWish.context && (
+              <p className="mt-2 text-sm text-gray-600">{amplifiedWish.context}</p>
+            )}
             <button
               onClick={() => onSupportWish(wish.id)}
               className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-full transition-colors duration-200 flex items-center"
