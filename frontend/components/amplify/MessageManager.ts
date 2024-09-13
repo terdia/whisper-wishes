@@ -5,19 +5,9 @@ export class MessageManager {
   static async createMessage(
     wishId: string,
     senderId: string,
-    recipientId: string,
     message: string,
     userSubscription: UserSubscription
   ): Promise<Message> {
-    console.log("MessageManager.createMessage called", {
-      wishId,
-      senderId,
-      recipientId,
-      message
-    });
-    // Get or create the conversation
-    const conversationId = await this.getOrCreateConversation(wishId, senderId, recipientId);
-
     // Check if messaging is paused for this wish
     const { data: pauseData, error: pauseError } = await supabase
       .from('message_pauses')
@@ -48,8 +38,6 @@ export class MessageManager {
       .insert({
         wish_id: wishId,
         sender_id: senderId,
-        recipient_id: recipientId,
-        conversation_id: conversationId,
         message: message,
       })
       .select()
@@ -60,17 +48,47 @@ export class MessageManager {
     return data;
   }
 
-  static async getMessages(conversationId: string, page: number = 1, limit: number = 20): Promise<Message[]> {
-    const { data, error } = await supabase
+  static async getMessages(wishId: string, page: number = 1, limit: number = 20): Promise<Message[]> {
+    // Fetch messages
+    const { data: messages, error: messagesError } = await supabase
       .from('wish_messages')
       .select('*')
-      .eq('conversation_id', conversationId)
+      .eq('wish_id', wishId)
       .order('created_at', { ascending: true })
       .range((page - 1) * limit, page * limit - 1);
 
-    if (error) throw error;
+    if (messagesError) throw messagesError;
 
-    return data || [];
+    if (!messages || messages.length === 0) {
+      return [];
+    }
+
+    // Get unique sender IDs
+    const senderIds = Array.from(new Set(messages.map(message => message.sender_id)));
+
+    // Fetch user profiles
+    const { data: userProfiles, error: profilesError } = await supabase
+      .from('user_profiles')
+      .select('id, username, avatar_url, is_public')
+      .in('id', senderIds);
+
+    if (profilesError) throw profilesError;
+
+    // Create a map of user profiles
+    const userProfileMap = new Map(userProfiles.map(profile => [profile.id, profile]));
+
+    // Combine messages with user profiles
+    const messagesWithProfiles: Message[] = messages.map(message => ({
+      ...message,
+      user_profiles: [userProfileMap.get(message.sender_id) || {
+        id: message.sender_id,
+        username: 'Unknown User',
+        avatar_url: null,
+        is_public: false
+      }]
+    }));
+
+    return messagesWithProfiles;
   }
 
   static async isMessagingPaused(wishId: string): Promise<boolean> {

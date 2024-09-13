@@ -2,8 +2,9 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, ChevronDown, Loader2, Bell, Megaphone } from 'lucide-react';
+import { Menu, X, ChevronDown, Loader2, Bell } from 'lucide-react';
 import { User } from '@supabase/supabase-js'
+import NotificationCenter from './NotificationCenter';
 
 interface UserProfile {
     id: string;
@@ -61,6 +62,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
 
   const handleNavigation = (path: string) => {
     if (router.pathname !== path) {
@@ -135,8 +137,13 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               {user && (
-                <div className="mr-4">
-                  <Bell className="h-6 w-6 text-gray-400" />
+                <div className="mr-4 relative">
+                  <NotificationCenter onUnreadCountChange={setUnreadCount} />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </div>
               )}
               {user ? (
@@ -206,6 +213,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="mt-3 space-y-1">
                   <a onClick={() => handleNavigation('/login')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Login</a>
                   <a onClick={() => handleNavigation('/signup')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Sign Up</a>
+                </div>
+              )}
+              {user && (
+                <div className="px-4 py-2">
+                  <NotificationCenter onUnreadCountChange={setUnreadCount} />
+                  {unreadCount > 0 && (
+                    <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

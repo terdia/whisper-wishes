@@ -56,9 +56,8 @@ export interface UserProfile {
 export interface Message {
   id: string;
   wish_id: string;
-  conversation_id: string;
   sender_id: string;
-  recipient_id: string;
   message: string;
   created_at: string;
+  user_profiles: UserProfile[];
 }
