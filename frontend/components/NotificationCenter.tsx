@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
 import { Bell, X, MessageCircle, Heart } from 'lucide-react';
@@ -18,6 +18,20 @@ const NotificationCenter: React.FC = () => {
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
   const { user } = useAuth();
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     if (user) {
@@ -133,7 +147,7 @@ const NotificationCenter: React.FC = () => {
   };
 
   return (
-    <div className="relative inline-block">
+    <div className="relative inline-block" ref={notificationRef}>
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 relative"
@@ -152,7 +166,7 @@ const NotificationCenter: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.2 }}
-            className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl z-10 overflow-hidden"
+            className="fixed inset-x-0 top-0 sm:absolute sm:right-0 sm:top-auto sm:left-auto mt-2 w-full sm:w-96 bg-white rounded-b-lg sm:rounded-lg shadow-xl z-50 overflow-hidden"
           >
             <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
               <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
@@ -165,7 +179,7 @@ const NotificationCenter: React.FC = () => {
                 </button>
               )}
             </div>
-            <div className="max-h-96 overflow-y-auto">
+            <div className="max-h-[calc(100vh-120px)] sm:max-h-96 overflow-y-auto">
               {notifications.length > 0 ? (
                 notifications.map(notification => (
                   <div
