@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { wishCache } from '../utils/wishCache';
 import { toast } from 'react-toastify';
-import { Search, Info, Filter, Grid, List, Flower } from 'lucide-react';
+import { Search, Star,Info, Filter, Grid, List, Flower } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
 import SEO from '../components/SEO';
@@ -13,6 +13,7 @@ import ListView from '../components/garden/ListView';
 import WishModal from '../components/WishModal';
 import AmplifiedWishes from '../components/AmplifiedWishes';
 import { supabase } from '../utils/supabaseClient';
+import FeaturedWishesModal from '../components/FeaturedWishesModal';
 
 interface Wish {
   id: string;
@@ -62,6 +63,7 @@ const GlobalWishGarden: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
   const wishesPerPage = 50;
+  const [showFeaturedWishes, setShowFeaturedWishes] = useState(false);
 
   const loadWishes = useCallback(async () => {
     if (!user) return;
@@ -179,13 +181,26 @@ const GlobalWishGarden: React.FC = () => {
         noindex={false}
       />
 
-      <motion.h1 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-          className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-white text-center"
+      <div className="mb-6 flex flex-col sm:flex-row items-center justify-between">
+        <motion.h1 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="hidden md:block text-2xl md:text-3xl lg:text-4xl font-bold text-white text-center"
         >
           Global Wish Garden
         </motion.h1>
+              
+        {/* Featured Wishes Button */}
+        <motion.button 
+          onClick={() => setShowFeaturedWishes(true)}
+          className="w-full sm:w-auto bg-yellow-400 text-purple-800 font-bold py-2 px-4 rounded-full shadow-lg hover:bg-yellow-300 transition-colors duration-200 flex items-center justify-center mt-4 sm:mt-0"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Star className="mr-2" size={20} />
+          View Featured Wishes
+        </motion.button>
+      </div>
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -262,11 +277,6 @@ const GlobalWishGarden: React.FC = () => {
           )}
         </AnimatePresence>
 
-        <div className="mb-8">
-        <h2 className="text-2xl font-bold text-white mb-4">Featured Wishes</h2>
-          <AmplifiedWishes onSupportWish={waterWish} />
-        </div>
-
        <div className="flex-grow overflow-y-auto">
         <AnimatePresence mode="wait">
           <motion.div
@@ -311,6 +321,12 @@ const GlobalWishGarden: React.FC = () => {
           </motion.div>
         </AnimatePresence>
        </div>
+
+      <FeaturedWishesModal
+        isOpen={showFeaturedWishes}
+        onClose={() => setShowFeaturedWishes(false)}
+        onSupportWish={waterWish}
+      />
 
       {selectedWish && (
         <WishModal

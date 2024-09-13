@@ -111,7 +111,8 @@ export class AmplificationManager {
             is_private,
             user_profiles:user_profiles (
               username,
-              avatar_url
+              avatar_url,
+              is_public
             )
           )
         `, { count: 'exact' })
