@@ -12,6 +12,7 @@ import GridView from '../components/garden/GridView';
 import ListView from '../components/garden/ListView';
 import WishModal from '../components/WishModal';
 import AmplifiedWishes from '../components/AmplifiedWishes';
+import { supabase } from '../utils/supabaseClient';
 
 interface Wish {
   id: string;
@@ -108,6 +109,25 @@ const GlobalWishGarden: React.FC = () => {
           xp: result.userXp,
           level: result.userLevel
         });
+
+        // After successfully supporting a wish
+        try {
+          const { data, error } = await supabase.rpc('create_notification', {
+            p_user_id: result.wish.user_id,
+            p_type: 'WISH_SUPPORT',
+            p_content: {
+              supporterName: userProfile.is_public ? userProfile.username : 'Anonymous User',
+              wishText: result.wish.wish_text.substring(0, 50) + (result.wish.wish_text.length > 50 ? '...' : '')
+            }
+          });
+
+          if (error) throw error;
+
+          console.log('Notification created:', data.notification);
+          } catch (error) {
+            console.error('Error creating notification:', error);
+          }
+
       } else if (result.error) {
         throw result.error;
       } else {
@@ -135,18 +155,6 @@ const GlobalWishGarden: React.FC = () => {
     setPage(nextPage);
     setDisplayedWishes(allWishes.slice(0, (nextPage + 1) * wishesPerPage));
     setHasMore(allWishes.length > (nextPage + 1) * wishesPerPage);
-  };
-
-  const handleSupportWish = async (wishId: string) => {
-    
-    try {
-      // Placeholder: Replace with actual API call
-      
-      toast.success('Wish supported successfully!');
-    } catch (error) {
-      console.error('Error supporting wish:', error);
-      toast.error('Failed to support wish');
-    }
   };
 
   if (!user || !userProfile) {
@@ -258,7 +266,7 @@ const GlobalWishGarden: React.FC = () => {
 
         <div className="mb-8">
         <h2 className="text-2xl font-bold text-white mb-4">Featured Wishes</h2>
-          <AmplifiedWishes onSupportWish={handleSupportWish} />
+          <AmplifiedWishes onSupportWish={waterWish} />
         </div>
 
        <div className="flex-grow overflow-y-auto">

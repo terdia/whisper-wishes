@@ -7,9 +7,11 @@ import { Wish, Message } from './amplify/types';
 import LoadingSpinner from './LoadingSpinner';
 import ReportModal from './ReportModal';
 import UpgradeModal from './UpgradeModal';
-import { Send, AlertTriangle, PauseCircle, PlayCircle } from 'lucide-react';
+import BackButton from './BackButton';
+import { CheckCircle, Send, AlertTriangle, PauseCircle, PlayCircle } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { formatDistanceToNow } from 'date-fns';
+import { supabase } from '../utils/supabaseClient';
 
 interface AmplifiedWishDetailProps {
   wishId: string;
@@ -31,8 +33,26 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
       fetchWishDetails();
       fetchMessages();
       checkMessagingPaused();
+
+      // Subscribe to real-time updates for new messages
+      const subscription = supabase
+        .channel(`wish-messages-${wishId}`)
+        .on('postgres_changes', 
+          { event: 'INSERT', schema: 'public', table: 'wish_messages', filter: `wish_id=eq.${wishId}` },
+          handleNewMessage
+        )
+        .subscribe();
+
+      return () => {
+        subscription.unsubscribe();
+      };
     }
   }, [wishId, user]);
+
+  const handleNewMessage = (payload: any) => {
+    const newMessage = payload.new;
+    setMessages(prevMessages => [...prevMessages, newMessage]);
+  };
 
   const fetchWishDetails = async () => {
     try {
@@ -94,7 +114,7 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
     });
   
     try {
-      await MessageManager.createMessage(
+      const sentMessage = await MessageManager.createMessage(
         wishId,
         user.id,
         newMessage,
@@ -103,9 +123,6 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
       console.log("Message sent successfully");
       setNewMessage('');
       toast.success('Message sent successfully');
-      
-      // Fetch updated messages after sending a new one
-      await fetchMessages();
     } catch (error) {
       console.error('Error sending message:', error);
       if (error instanceof Error) {
@@ -157,19 +174,43 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
     return <div>Wish not found</div>;
   }
 
+  const truncateWishText = (text: string, maxLength: number) => {
+    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
+  };
+
+  const getProgressColor = (progress: number) => {
+    if (progress < 33) return 'bg-red-500';
+    if (progress < 66) return 'bg-yellow-500';
+    return 'bg-green-500';
+  };
+
   return (
-    <div className="max-w-4xl mx-auto mt-8 p-4">
-      <p className="text-3xl font-bold mb-4">{wish.wish_text}</p>
+    <div className="max-w-4xl mx-auto mt-2 p-4">
+      <BackButton className="mb-4" />
+      <p className="text-2xl font-bold mb-4">
+        {truncateWishText(wish?.wish_text || '', 20)}
+      </p>
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
-        <p className="text-gray-600 mb-4">Category: {wish.category}</p>
         <div className="mb-4">
-          <div className="w-full bg-gray-200 rounded-full h-2.5">
-            <div 
-              className="bg-blue-600 h-2.5 rounded-full" 
-              style={{ width: `${wish.progress}%` }}
-            ></div>
+          <div className="flex justify-between items-center mb-2">
+            <span className="text-sm font-medium text-gray-700">Progress</span>
+            <span className="text-sm font-medium text-gray-700">{wish.progress}%</span>
           </div>
-          <p className="text-sm text-gray-600 mt-1">Progress: {wish.progress}%</p>
+          <div className="w-full bg-gray-200 rounded-full h-4 dark:bg-gray-700 relative">
+            <div 
+              className={`${getProgressColor(wish.progress)} h-4 rounded-full transition-all duration-500 ease-out`}
+              style={{ width: `${wish.progress}%` }}
+            >
+              {wish.progress === 100 && (
+                <CheckCircle className="absolute right-0 top-1/2 transform -translate-y-1/2 text-white" size={16} />
+              )}
+            </div>
+          </div>
+          <div className="flex justify-between mt-2">
+            <span className="text-xs text-gray-500">Start</span>
+            <span className="text-xs text-gray-500">Halfway</span>
+            <span className="text-xs text-gray-500">Complete</span>
+          </div>
         </div>
         {user && user.id === wish.user_id && (
           <button
@@ -194,7 +235,7 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
       </div>
 
       <div className="bg-white rounded-lg shadow-md p-6">
-        <h2 className="text-2xl font-semibold mb-4">Messages</h2>
+        <h2 className="text-2xl font-semibold mb-4">Conversations</h2>
         
         <div className="space-y-4 mb-4 max-h-96 overflow-y-auto">
           {messages.map((message) => (
@@ -263,7 +304,7 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
           className="bg-red-500 text-white px-4 py-2 rounded-full hover:bg-red-600 flex items-center mx-auto"
         >
           <AlertTriangle size={20} className="mr-2" />
-          Report This Wish
+          Report Conversation
         </button>
       </div>
 

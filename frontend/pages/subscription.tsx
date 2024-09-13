@@ -3,6 +3,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { supabase } from '../utils/supabaseClient';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Switch } from '@headlessui/react';
+import BackButton from '../components/BackButton';
 
 interface SubscriptionPlan {
   id: string;
@@ -93,6 +94,7 @@ const Subscription: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-8 p-4">
+      <BackButton className="mb-4" />
       <h1 className="text-4xl font-bold mb-6 text-center text-purple-800">Choose Your Plan</h1>
       
       <div className="flex justify-center items-center mb-8">

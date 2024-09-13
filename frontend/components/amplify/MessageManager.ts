@@ -1,4 +1,4 @@
-import { Message, UserSubscription, Conversation, UserProfile } from './types';
+import { Message, UserSubscription } from './types';
 import { supabase } from '../../utils/supabaseClient';
 
 export class MessageManager {
@@ -33,19 +33,17 @@ export class MessageManager {
       }
     }
 
-    const { data, error } = await supabase
-      .from('wish_messages')
-      .insert({
-        wish_id: wishId,
-        sender_id: senderId,
-        message: message,
-      })
-      .select()
-      .single();
+    // Start a Supabase transaction
+    const { data, error } = await supabase.rpc('create_message_and_notify', {
+      p_wish_id: wishId,
+      p_sender_id: senderId,
+      p_message: message,
+      p_message_limit: userSubscription.features.messages_per_wish
+    });
 
     if (error) throw error;
 
-    return data;
+    return data.message;
   }
 
   static async getMessages(wishId: string, page: number = 1, limit: number = 20): Promise<Message[]> {
@@ -118,77 +116,5 @@ export class MessageManager {
 
       if (error) throw error;
     }
-  }
-
-  static async getOrCreateConversation(wishId: string, senderId: string, recipientId: string): Promise<string> {
-    // Ensure consistent ordering of participant IDs
-    const [participantA, participantB] = [senderId, recipientId].sort();
-
-    // Check if a conversation already exists
-    const { data: existingConversation, error: fetchError } = await supabase
-      .from('conversations')
-      .select('id')
-      .eq('wish_id', wishId)
-      .eq('participant1_id', participantA)
-      .eq('participant2_id', participantB)
-      .maybeSingle();
-
-    if (fetchError) throw fetchError;
-
-    if (existingConversation) return existingConversation.id;
-
-    // If no conversation exists, create a new one
-    const { data: newConversation, error: insertError } = await supabase
-      .from('conversations')
-      .insert({
-        wish_id: wishId,
-        participant1_id: participantA,
-        participant2_id: participantB
-      })
-      .select()
-      .single();
-
-    if (insertError) throw insertError;
-
-    return newConversation.id;
-  }
-
-  static async getConversations(wishId: string, userId: string): Promise<Conversation[]> {
-    // Step 1: Fetch conversations
-    const { data: conversationsData, error: conversationsError } = await supabase
-      .from('conversations')
-      .select('*')
-      .eq('wish_id', wishId)
-      .or(`participant1_id.eq.${userId},participant2_id.eq.${userId}`);
-
-    if (conversationsError) throw conversationsError;
-
-    if (!conversationsData || conversationsData.length === 0) {
-      return [];
-    }
-
-    // Step 2: Fetch user profiles
-    const participantIds = new Set(
-      conversationsData.flatMap(conv => [conv.participant1_id, conv.participant2_id])
-    );
-
-    const { data: profilesData, error: profilesError } = await supabase
-      .from('user_profiles')
-      .select('id, username, avatar_url, is_premium, is_public')
-      .in('id', Array.from(participantIds));
-
-    if (profilesError) throw profilesError;
-
-    // Create a map for quick profile lookup
-    const profileMap = new Map(profilesData.map(profile => [profile.id, profile]));
-
-    // Step 3: Combine data
-    const conversations: Conversation[] = conversationsData.map(conv => ({
-      ...conv,
-      participant1: profileMap.get(conv.participant1_id) as UserProfile,
-      participant2: profileMap.get(conv.participant2_id) as UserProfile
-    }));
-
-    return conversations;
   }
 }

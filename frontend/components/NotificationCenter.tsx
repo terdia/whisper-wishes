@@ -1,7 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { supabase } from '../utils/supabaseClient';
 import { useAuth } from '../contexts/AuthContext';
-import { Bell } from 'lucide-react';
+import { Bell, X, MessageCircle, Heart } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { format } from 'date-fns';
 
 interface Notification {
   id: string;
@@ -11,11 +13,7 @@ interface Notification {
   created_at: string;
 }
 
-interface NotificationCenterProps {
-  onUnreadCountChange: (count: number) => void;
-}
-
-const NotificationCenter: React.FC<NotificationCenterProps> = ({ onUnreadCountChange }) => {
+const NotificationCenter: React.FC = () => {
   const [notifications, setNotifications] = useState<Notification[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -38,15 +36,13 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onUnreadCountCh
     }
   }, [user]);
 
-  useEffect(() => {
-    onUnreadCountChange(unreadCount);
-  }, [unreadCount, onUnreadCountChange]);
-
   const fetchNotifications = async () => {
+    if (!user) return;
+    
     const { data, error } = await supabase
       .from('notifications')
       .select('*')
-      .eq('user_id', user!.id)
+      .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -56,17 +52,12 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onUnreadCountCh
       setNotifications(data);
       const newUnreadCount = data.filter(n => !n.is_read).length;
       setUnreadCount(newUnreadCount);
-      onUnreadCountChange(newUnreadCount);
     }
   };
 
   const handleNewNotification = (payload: any) => {
     setNotifications(prev => [payload.new, ...prev]);
-    setUnreadCount(prev => {
-      const newCount = prev + 1;
-      onUnreadCountChange(newCount);
-      return newCount;
-    });
+    setUnreadCount(prev => prev + 1);
   };
 
   const markAsRead = async (notificationId: string) => {
@@ -79,53 +70,130 @@ const NotificationCenter: React.FC<NotificationCenterProps> = ({ onUnreadCountCh
       console.error('Error marking notification as read:', error);
     } else {
       setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n));
-      setUnreadCount(prev => {
-        const newCount = prev - 1;
-        onUnreadCountChange(newCount);
-        return newCount;
-      });
+      setUnreadCount(prev => prev - 1);
+    }
+  };
+
+  const renderNotificationIcon = (type: string) => {
+    switch (type) {
+      case 'WISH_SUPPORT':
+        return <Heart className="w-5 h-5 text-red-500" />;
+      case 'NEW_MESSAGE':
+        return <MessageCircle className="w-5 h-5 text-blue-500" />;
+      default:
+        return <Bell className="w-5 h-5 text-gray-500" />;
     }
   };
 
   const renderNotification = (notification: Notification) => {
-    switch (notification.type) {
-      case 'WISH_SUPPORT':
-        return (
-          <div className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => markAsRead(notification.id)}>
-            <p>{notification.content.supporterName} supported your wish: "{notification.content.wishText}"</p>
+    const icon = renderNotificationIcon(notification.type);
+    const formattedDate = format(new Date(notification.created_at), 'MMM d, yyyy');
+
+    return (
+      <div className="p-4 hover:bg-gray-50 transition-colors duration-150 ease-in-out">
+        <div className="flex items-start">
+          <div className="flex-shrink-0">{icon}</div>
+          <div className="ml-3 flex-1">
+            <p className="text-sm font-medium text-gray-900">
+              {notification.type === 'WISH_SUPPORT' && (
+                <>
+                  <span className="font-semibold">{notification.content.supporterName}</span> supported your wish
+                </>
+              )}
+              {notification.type === 'NEW_MESSAGE' && (
+                <>
+                  New message from <span className="font-semibold">{notification.content.senderName || 'Unknown'}</span>
+                </>
+              )}
+            </p>
+            <p className="mt-1 text-sm text-gray-500">
+              {notification.type === 'WISH_SUPPORT' && `"${notification.content.wishText}"`}
+              {notification.type === 'NEW_MESSAGE' && `"${notification.content.message_preview || 'No preview available'}"`}
+            </p>
+            <p className="mt-1 text-xs text-gray-400">{formattedDate}</p>
           </div>
-        );
-      case 'NEW_MESSAGE':
-        return (
-          <div className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => markAsRead(notification.id)}>
-            <p>New message from {notification.content.senderName}: "{notification.content.messagePreview}"</p>
-          </div>
-        );
-      // Add more cases for other notification types
-      default:
-        return null;
+        </div>
+      </div>
+    );
+  };
+
+  const markAllAsRead = async () => {
+    const { error } = await supabase
+      .from('notifications')
+      .update({ is_read: true })
+      .eq('user_id', user!.id)
+      .eq('is_read', false);
+
+    if (error) {
+      console.error('Error marking all notifications as read:', error);
+    } else {
+      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setUnreadCount(0);
     }
   };
 
   return (
-    <div className="relative">
-      <button onClick={() => setIsOpen(!isOpen)} className="p-2">
-        <Bell />
+    <div className="relative inline-block">
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className="p-1 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 relative"
+      >
+        <Bell className="h-6 w-6 text-gray-500" />
+        {unreadCount > 0 && (
+          <span className="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-red-100 transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+            {unreadCount}
+          </span>
+        )}
       </button>
-      {isOpen && (
-        <div className="absolute right-0 mt-2 w-80 bg-white rounded-md shadow-lg z-10">
-          <div className="p-2 border-b">
-            <h3 className="text-lg font-semibold">Notifications</h3>
-          </div>
-          <div className="max-h-96 overflow-y-auto">
-            {notifications.map(notification => (
-              <div key={notification.id} className={`border-b ${!notification.is_read ? 'bg-blue-50' : ''}`}>
-                {renderNotification(notification)}
-              </div>
-            ))}
-          </div>
-        </div>
-      )}
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -10 }}
+            transition={{ duration: 0.2 }}
+            className="absolute right-0 mt-2 w-96 bg-white rounded-lg shadow-xl z-10 overflow-hidden"
+          >
+            <div className="p-4 border-b border-gray-200 flex justify-between items-center bg-gray-50">
+              <h3 className="text-lg font-semibold text-gray-900">Notifications</h3>
+              {unreadCount > 0 && (
+                <button
+                  onClick={markAllAsRead}
+                  className="text-sm text-indigo-600 hover:text-indigo-800 font-medium focus:outline-none"
+                >
+                  Mark all as read
+                </button>
+              )}
+            </div>
+            <div className="max-h-96 overflow-y-auto">
+              {notifications.length > 0 ? (
+                notifications.map(notification => (
+                  <div
+                    key={notification.id}
+                    className={`border-b border-gray-200 ${!notification.is_read ? 'bg-indigo-50' : ''} flex justify-between items-start`}
+                  >
+                    {renderNotification(notification)}
+                    {!notification.is_read && (
+                      <button
+                        onClick={() => markAsRead(notification.id)}
+                        className="p-2 text-gray-500 hover:text-gray-700"
+                        title="Mark as read"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                ))
+              ) : (
+                <div className="p-8 text-center text-gray-500">
+                  <Bell className="mx-auto h-12 w-12 text-gray-400" />
+                  <p className="mt-2 text-sm font-medium">No notifications</p>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };

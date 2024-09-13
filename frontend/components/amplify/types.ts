@@ -26,16 +26,6 @@ export interface Amplification {
   context?: string;
 }
 
-export interface Conversation {
-  id: string;
-  wish_id: string;
-  participant1_id: string;
-  participant2_id: string;
-  created_at: string;
-  participant1: UserProfile;
-  participant2: UserProfile;
-}
-
 export interface UserSubscription {
   tier: 'free' | 'premium';
   features: {

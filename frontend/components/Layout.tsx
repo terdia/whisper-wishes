@@ -216,10 +216,10 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </div>
               )}
               {user && (
-                <div className="px-4 py-2">
+                <div className="px-4 py-2 relative inline-block">
                   <NotificationCenter onUnreadCountChange={setUnreadCount} />
                   {unreadCount > 0 && (
-                    <span className="ml-2 bg-red-500 text-white text-xs rounded-full px-2 py-1">
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
                       {unreadCount > 99 ? '99+' : unreadCount}
                     </span>
                   )}

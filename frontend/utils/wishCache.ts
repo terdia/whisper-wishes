@@ -32,6 +32,7 @@ interface WaterWishResult {
     creatorXp?: number;
     creatorLevel?: number;
     error?: any;
+    wish?: Wish;
   }
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -125,7 +126,7 @@ class WishCache {
 
       const { data: wish, error: wishError } = await supabase
         .from('wishes')
-        .select('user_id')
+        .select('user_id', 'wish_text')
         .eq('id', wishId)
         .single();
 
@@ -192,7 +193,8 @@ class WishCache {
         userXp: userXpData.new_xp,
         userLevel: userXpData.new_level,
         creatorXp: creatorXpData.new_xp,
-        creatorLevel: creatorXpData.new_level
+        creatorLevel: creatorXpData.new_level,
+        wish: wish
       };
     } catch (error) {
       console.error('Error watering wish:', error);
