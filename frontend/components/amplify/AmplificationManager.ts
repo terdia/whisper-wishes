@@ -138,4 +138,47 @@ export class AmplificationManager {
       throw error;
     }
   }
+
+  static async submitReport(wishId: string, reporterId: string, reason: string, details: string): Promise<void> {
+    const { error } = await supabase
+      .from('wish_reports')
+      .insert({
+        wish_id: wishId,
+        reporter_id: reporterId,
+        reason: reason,
+        details: details,
+        status: 'pending'
+      });
+
+    if (error) throw error;
+  }
+
+  static async getAmplifiedWishDetails(wishId: string): Promise<Wish> {
+    const { data, error } = await supabase
+      .from('wishes')
+      .select(`
+        *,
+        user_profiles:user_id (username, avatar_url),
+        wish_amplifications (*)
+      `)
+      .eq('id', wishId)
+      .single();
+
+    if (error) throw error;
+    return data;
+  }
+
+  static async removeAmplification(amplificationId: string): Promise<void> {
+    try {
+      const { error } = await supabase
+        .from('wish_amplifications')
+        .delete()
+        .eq('id', amplificationId);
+
+      if (error) throw error;
+    } catch (error) {
+      console.error('Error removing amplification:', error);
+      throw error;
+    }
+  }
 }

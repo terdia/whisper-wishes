@@ -107,7 +107,7 @@ const AmplificationModal: React.FC<AmplificationModalProps> = ({
                     type="button"
                     onClick={() => setObjective(option.value as typeof objective)}
                     className={`p-3 rounded-lg flex flex-col items-center justify-center ${
-                      objective === option.value ? `${option.color} ring-2 ring-offset-2 ring-${option.color.split('-')[1]}-400` : 'bg-gray-100'
+                      objective === option.value ? `${option.color} ring-2 ring-offset-2 ring-${option.color.split('-')[1]}-400` : 'bg-gray-600'
                     }`}
                   >
                     <option.icon size={24} className={objective === option.value ? '' : 'text-gray-500'} />

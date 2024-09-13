@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
-import { Menu, X, ChevronDown, Loader2, Bell } from 'lucide-react';
+import { Menu, X, ChevronDown, Loader2, Bell, Megaphone } from 'lucide-react';
 import { User } from '@supabase/supabase-js'
 
 interface UserProfile {
@@ -151,6 +151,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg z-50">
                       <div className="py-1 rounded-md bg-white shadow-xs">
                         <a onClick={() => handleNavigation('/profile')} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Your Profile</a>
+                        <a onClick={() => handleNavigation('/my-amplified-wishes')} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">My Amplified Wishes</a>
                         <a onClick={handleSignOut} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Sign out</a>
                       </div>
                     </div>
@@ -197,6 +198,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   </div>
                   <div className="mt-3 space-y-1">
                     <a onClick={() => handleNavigation('/profile')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Your Profile</a>
+                    <a onClick={() => handleNavigation('/my-amplified-wishes')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">My Amplified Wishes</a>
                     <a onClick={handleSignOut} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Sign out</a>
                   </div>
                 </>
