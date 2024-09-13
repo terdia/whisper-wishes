@@ -114,7 +114,7 @@ class WishCache {
         .select('id')
         .eq('user_id', userId)
         .eq('wish_id', wishId)
-        .single();
+        .maybeSingle();
 
       if (supportCheckError && supportCheckError.code !== 'PGRST116') {
         throw supportCheckError;
@@ -126,7 +126,7 @@ class WishCache {
 
       const { data: wish, error: wishError } = await supabase
         .from('wishes')
-        .select('user_id', 'wish_text')
+        .select('id, user_id, wish_text')
         .eq('id', wishId)
         .single();
 
@@ -198,7 +198,7 @@ class WishCache {
       };
     } catch (error) {
       console.error('Error watering wish:', error);
-      return { success: false, error };
+      return { success: false, error, wish: null };
     }
   }
 

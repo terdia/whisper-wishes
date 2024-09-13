@@ -105,19 +105,17 @@ const GlobalWishGarden: React.FC = () => {
         setAllWishes(prevWishes => 
           prevWishes.map(w => w.id === wishId ? { ...w, support_count: w.support_count + 1 } : w)
         );
-        updateUserStats({
-          xp: result.userXp,
-          level: result.userLevel
-        });
 
         // After successfully supporting a wish
         try {
           const { data, error } = await supabase.rpc('create_notification', {
-            p_user_id: result.wish.user_id,
+            p_user_id: result.wish?.user_id,
             p_type: 'WISH_SUPPORT',
             p_content: {
               supporterName: userProfile.is_public ? userProfile.username : 'Anonymous User',
-              wishText: result.wish.wish_text.substring(0, 50) + (result.wish.wish_text.length > 50 ? '...' : '')
+              wishText: result.wish?.wish_text 
+                ? result.wish.wish_text.substring(0, 50) + (result.wish.wish_text.length > 50 ? '...' : '')
+                : 'Unknown wish'
             }
           });
 
