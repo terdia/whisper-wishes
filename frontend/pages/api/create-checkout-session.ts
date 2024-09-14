@@ -4,7 +4,7 @@ import { supabase } from '../../utils/supabaseClient';
 import { STRIPE_SECRET_KEY } from '../../utils/secret';
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2022-11-15',
+  apiVersion: '2023-10-16',
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -35,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       ],
       mode: 'subscription',
       allow_promotion_codes: true, // This enables coupon input
-      success_url: `${req.headers.origin}/subscription?success=true&session_id={CHECKOUT_SESSION_ID}`,
+      success_url: `${req.headers.origin}/subscription-result?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${req.headers.origin}/subscription?canceled=true`,
       client_reference_id: userId,
       metadata: {

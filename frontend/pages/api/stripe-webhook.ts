@@ -5,7 +5,7 @@ import { supabase } from '../../utils/supabaseClient';
 import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '../../utils/secret';
 
 const stripe = new Stripe(STRIPE_SECRET_KEY, {
-  apiVersion: '2022-11-15',
+  apiVersion: '2023-10-16',
 });
 
 export const config = {
@@ -30,9 +30,13 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'checkout.session.completed') {
+  if (event.type === 'checkout.session.completed' || event.type === 'customer.subscription.updated') {
     const session = event.data.object as Stripe.Checkout.Session;
     await handleCheckoutSessionCompleted(session);
+  } else if (event.type === 'checkout.session.expired') {
+    console.log('Checkout session expired');
+  } else if (event.type === 'checkout.session.async_payment_failed') {
+    console.log('Async payment failed');
   }
 
   res.json({ received: true });
