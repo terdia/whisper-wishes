@@ -4,6 +4,8 @@ import { supabase } from '../utils/supabaseClient';
 import LoadingSpinner from '../components/LoadingSpinner';
 import { Switch } from '@headlessui/react';
 import BackButton from '../components/BackButton';
+import { loadStripe } from '@stripe/stripe-js';
+import { STRIPE_PUBLISHABLE_KEY } from '../utils/secret';
 
 interface SubscriptionPlan {
   id: string;
@@ -16,11 +18,12 @@ interface SubscriptionPlan {
 }
 
 const Subscription: React.FC = () => {
-  const { user, userProfile } = useAuth();
+  const { user, userProfile, fetchUserSubscription } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
   const [currentPlan, setCurrentPlan] = useState<SubscriptionPlan | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isYearly, setIsYearly] = useState(true);
+  const [stripePromise, setStripePromise] = useState(null);
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -56,10 +59,61 @@ const Subscription: React.FC = () => {
     fetchPlans();
   }, [user]);
 
+  useEffect(() => {
+    setStripePromise(loadStripe(STRIPE_PUBLISHABLE_KEY));
+  }, []);
+
   const handleUpgrade = async (planId: string) => {
-    // Implement upgrade logic here
-    console.log('Upgrading to plan:', planId);
+    if (!user) {
+      console.error('User not authenticated');
+      return;
+    }
+
+    try {
+      setIsLoading(true);
+
+      // Create a Stripe Checkout session
+      const response = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ planId, userId: user.id }),
+      });
+
+      const { sessionId } = await response.json();
+
+      // Redirect to Stripe Checkout
+      const stripe = await stripePromise;
+      if (stripe) {
+        const { error } = await stripe.redirectToCheckout({ sessionId });
+        if (error) {
+          console.error('Stripe redirect error:', error);
+        }
+      } else {
+        console.error('Stripe has not loaded');
+      }
+
+    } catch (error) {
+      console.error('Error upgrading plan:', error);
+      // Show error message to user
+    } finally {
+      setIsLoading(false);
+    }
   };
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('success')) {
+      console.log('Order placed! You will receive an email confirmation.');
+      // Refresh user subscription data
+      fetchUserSubscription(user.id);
+    }
+
+    if (query.get('canceled')) {
+      console.log("Order canceled -- continue to shop around and checkout when you're ready.");
+    }
+  }, []);
 
   const formatFeature = (feature: string, value: any) => {
     switch (feature) {
