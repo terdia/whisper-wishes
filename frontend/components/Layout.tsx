@@ -1,9 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
 import { Menu, X, ChevronDown, Loader2, Bell } from 'lucide-react';
 import { User } from '@supabase/supabase-js'
+import NotificationCenter from './NotificationCenter';
 
 interface UserProfile {
     id: string;
@@ -61,6 +62,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [unreadCount, setUnreadCount] = useState(0);
+  const [isNotificationOpen, setIsNotificationOpen] = useState(false);
+  const dropdownRef = useRef<HTMLDivElement>(null);
+  const notificationRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+        setIsDropdownOpen(false);
+      }
+      if (notificationRef.current && !notificationRef.current.contains(event.target as Node)) {
+        setIsNotificationOpen(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleNavigation = (path: string) => {
     if (router.pathname !== path) {
@@ -135,12 +156,17 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
               {user && (
-                <div className="mr-4">
-                  <Bell className="h-6 w-6 text-gray-400" />
+                <div className="mr-4 relative" ref={notificationRef}>
+                  <NotificationCenter />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </div>
               )}
               {user ? (
-                <div className="ml-3 relative">
+                <div className="ml-3 relative" ref={dropdownRef}>
                   <div>
                     <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex text-sm border-2 border-transparent rounded-full focus:outline-none focus:border-gray-300 transition duration-150 ease-in-out">
                       <UserAvatar user={user} userProfile={userProfile} />
@@ -151,6 +177,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg z-50">
                       <div className="py-1 rounded-md bg-white shadow-xs">
                         <a onClick={() => handleNavigation('/profile')} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Your Profile</a>
+                        <a onClick={() => handleNavigation('/my-amplified-wishes')} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">My Amplified Wishes</a>
                         <a onClick={handleSignOut} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Sign out</a>
                       </div>
                     </div>
@@ -197,6 +224,7 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   </div>
                   <div className="mt-3 space-y-1">
                     <a onClick={() => handleNavigation('/profile')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Your Profile</a>
+                    <a onClick={() => handleNavigation('/my-amplified-wishes')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">My Amplified Wishes</a>
                     <a onClick={handleSignOut} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Sign out</a>
                   </div>
                 </>
@@ -204,6 +232,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 <div className="mt-3 space-y-1">
                   <a onClick={() => handleNavigation('/login')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Login</a>
                   <a onClick={() => handleNavigation('/signup')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Sign Up</a>
+                </div>
+              )}
+              {user && (
+                <div className="px-4 py-2 relative inline-block">
+                  <NotificationCenter />
+                  {unreadCount > 0 && (
+                    <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+                      {unreadCount > 99 ? '99+' : unreadCount}
+                    </span>
+                  )}
                 </div>
               )}
             </div>

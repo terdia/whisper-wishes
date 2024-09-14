@@ -32,6 +32,7 @@ interface WaterWishResult {
     creatorXp?: number;
     creatorLevel?: number;
     error?: any;
+    wish?: Wish;
   }
 
 const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes in milliseconds
@@ -113,7 +114,7 @@ class WishCache {
         .select('id')
         .eq('user_id', userId)
         .eq('wish_id', wishId)
-        .single();
+        .maybeSingle();
 
       if (supportCheckError && supportCheckError.code !== 'PGRST116') {
         throw supportCheckError;
@@ -125,7 +126,10 @@ class WishCache {
 
       const { data: wish, error: wishError } = await supabase
         .from('wishes')
-        .select('user_id')
+        .select(`
+          *,
+          user_profile:user_profiles(id, username, avatar_url, is_public)
+        `)
         .eq('id', wishId)
         .single();
 
@@ -149,7 +153,7 @@ class WishCache {
         .from('user_stats')
         .select('user_id')
         .eq('user_id', wish.user_id)
-        .single();
+        .maybeSingle();
 
       if (creatorStatsError && creatorStatsError.code !== 'PGRST116') {
         throw creatorStatsError;
@@ -187,12 +191,21 @@ class WishCache {
       // Invalidate cache after successful water
       this.invalidateCache();
 
+      // Map the wish data to match the Wish interface
+      const mappedWish: Wish = {
+        ...wish,
+        x: Math.random(),
+        y: Math.random(),
+        z: Math.random()
+      };
+
       return {
         success: true,
         userXp: userXpData.new_xp,
         userLevel: userXpData.new_level,
         creatorXp: creatorXpData.new_xp,
-        creatorLevel: creatorXpData.new_level
+        creatorLevel: creatorXpData.new_level,
+        wish: mappedWish
       };
     } catch (error) {
       console.error('Error watering wish:', error);

@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../contexts/AuthContext';
 import { wishCache } from '../utils/wishCache';
 import { toast } from 'react-toastify';
-import { Search, Info, Filter, Grid, List, Flower } from 'lucide-react';
+import { Search, Star,Info, Filter, Grid, List, Flower } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
 import SEO from '../components/SEO';
@@ -11,6 +11,9 @@ import DandelionView from '../components/garden/DandelionView';
 import GridView from '../components/garden/GridView';
 import ListView from '../components/garden/ListView';
 import WishModal from '../components/WishModal';
+import AmplifiedWishes from '../components/AmplifiedWishes';
+import { supabase } from '../utils/supabaseClient';
+import FeaturedWishesModal from '../components/FeaturedWishesModal';
 
 interface Wish {
   id: string;
@@ -60,6 +63,7 @@ const GlobalWishGarden: React.FC = () => {
   const [hasMore, setHasMore] = useState(true);
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
   const wishesPerPage = 50;
+  const [showFeaturedWishes, setShowFeaturedWishes] = useState(false);
 
   const loadWishes = useCallback(async () => {
     if (!user) return;
@@ -103,10 +107,27 @@ const GlobalWishGarden: React.FC = () => {
         setAllWishes(prevWishes => 
           prevWishes.map(w => w.id === wishId ? { ...w, support_count: w.support_count + 1 } : w)
         );
-        updateUserStats({
-          xp: result.userXp,
-          level: result.userLevel
-        });
+
+        // After successfully supporting a wish
+        try {
+          const { data, error } = await supabase.rpc('create_notification', {
+            p_user_id: result.wish?.user_id,
+            p_type: 'WISH_SUPPORT',
+            p_content: {
+              supporterName: userProfile.is_public ? userProfile.username : 'Anonymous User',
+              wishText: result.wish?.wish_text 
+                ? result.wish.wish_text.substring(0, 50) + (result.wish.wish_text.length > 50 ? '...' : '')
+                : 'Unknown wish'
+            }
+          });
+
+          if (error) throw error;
+
+          console.log('Notification created:', data.notification);
+          } catch (error) {
+            console.error('Error creating notification:', error);
+          }
+
       } else if (result.error) {
         throw result.error;
       } else {
@@ -160,13 +181,26 @@ const GlobalWishGarden: React.FC = () => {
         noindex={false}
       />
 
-      <motion.h1 
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-          className="text-2xl sm:text-3xl md:text-4xl font-bold mb-4 sm:mb-6 text-white text-center"
+      <div className="mb-6 flex flex-col sm:flex-row items-center justify-between">
+        <motion.h1 
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="hidden md:block text-2xl md:text-3xl lg:text-4xl font-bold text-white text-center"
         >
           Global Wish Garden
         </motion.h1>
+              
+        {/* Featured Wishes Button */}
+        <motion.button 
+          onClick={() => setShowFeaturedWishes(true)}
+          className="w-full sm:w-auto bg-yellow-400 text-purple-800 font-bold py-2 px-4 rounded-full shadow-lg hover:bg-yellow-300 transition-colors duration-200 flex items-center justify-center mt-4 sm:mt-0"
+          whileHover={{ scale: 1.05 }}
+          whileTap={{ scale: 0.95 }}
+        >
+          <Star className="mr-2" size={20} />
+          View Featured Wishes
+        </motion.button>
+      </div>
         
         <motion.div 
           initial={{ opacity: 0, y: 20 }}
@@ -287,6 +321,12 @@ const GlobalWishGarden: React.FC = () => {
           </motion.div>
         </AnimatePresence>
        </div>
+
+      <FeaturedWishesModal
+        isOpen={showFeaturedWishes}
+        onClose={() => setShowFeaturedWishes(false)}
+        onSupportWish={waterWish}
+      />
 
       {selectedWish && (
         <WishModal
