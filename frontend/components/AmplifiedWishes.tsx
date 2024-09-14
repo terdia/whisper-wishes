@@ -1,32 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AmplificationManager } from './amplify/AmplificationManager';
-import { Wish } from './amplify/types';
+import { AmplifiedWish } from './amplify/types';
 import { Droplet, Users, HelpCircle, Briefcase, MessageCircle, Calendar, ChevronDown, ChevronUp } from 'lucide-react';
 import { useRouter } from 'next/router';
 import { useAuth } from '../contexts/AuthContext';
-
-interface ExtendedWish extends Wish {
-  user_profiles: {
-    username: string;
-    avatar_url: string;
-  };
-  wish_amplifications: {
-    objective: 'support' | 'help' | 'mentorship';
-    context?: string;
-  }[];
-}
-
-interface AmplifiedWish {
-  id: string;
-  wish_id: string;
-  user_id: string;
-  amplified_at: string;
-  expires_at: string;
-  wishes: ExtendedWish;
-  objective: 'support' | 'help' | 'mentorship';
-  context?: string;
-}
 
 interface AmplifiedWishesProps {
   onSupportWish: (wishId: string) => void;
@@ -48,6 +26,7 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
   const router = useRouter();
   const { user } = useAuth();
   const [expandedWishes, setExpandedWishes] = useState<{ [key: string]: boolean }>({});
+  const [expandedContexts, setExpandedContexts] = useState<{ [key: string]: boolean }>({});
 
   useEffect(() => {
     fetchAmplifiedWishes();
@@ -92,6 +71,10 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
     setExpandedWishes(prev => ({ ...prev, [wishId]: !prev[wishId] }));
   };
 
+  const toggleContextExpansion = (wishId: string) => {
+    setExpandedContexts(prev => ({ ...prev, [wishId]: !prev[wishId] }));
+  };
+
   if (isLoading) {
     return <div className="text-center py-8">Loading amplified wishes...</div>;
   }
@@ -132,7 +115,7 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
             </div>
             <div className="p-4 flex-grow">
               <div className="mb-2">
-                <h4 className={`text-xl font-semibold ${expandedWishes[amplifiedWish.id] ? '' : 'line-clamp-2'}`}>
+                <h4 className={`text-base sm:text-lg font-semibold ${amplifiedWish.wishes.wish_text.length > 100 ? (expandedWishes[amplifiedWish.id] ? '' : 'line-clamp-3') : ''}`}>
                   {amplifiedWish.wishes.wish_text}
                 </h4>
                 {amplifiedWish.wishes.wish_text.length > 100 && (
@@ -165,11 +148,31 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
               <div className="flex items-center mb-4 text-sm">
                 {getObjectiveIcon(amplifiedWish.objective)}
                 <span className="ml-2 font-medium">
-                  {amplifiedWish.objective.charAt(0).toUpperCase() + amplifiedWish.objective.slice(1)}
+                  {amplifiedWish.objective.charAt(0).toUpperCase() + amplifiedWish.objective.slice(1)} needed
                 </span>
               </div>
               {amplifiedWish.context && (
-                <p className="text-sm text-gray-600 mb-4 line-clamp-3">{amplifiedWish.context}</p>
+                <>
+                  <p className={`text-sm text-gray-600 mb-4 ${amplifiedWish.context.length > 100 ? (expandedContexts[amplifiedWish.id] ? '' : 'line-clamp-3') : ''}`}>
+                    {amplifiedWish.context}
+                  </p>
+                  {amplifiedWish.context.length > 100 && (
+                    <button 
+                      onClick={() => toggleContextExpansion(amplifiedWish.id)}
+                      className="text-blue-500 hover:text-blue-700 text-sm font-medium mt-1 flex items-center"
+                    >
+                      {expandedContexts[amplifiedWish.id] ? (
+                        <>
+                          Hide context <ChevronUp size={16} className="ml-1" />
+                        </>
+                      ) : (
+                        <>
+                          Show more context <ChevronDown size={16} className="ml-1" />
+                        </>
+                      )}
+                    </button>
+                  )}
+                </>
               )}
             </div>
             <div className="mt-auto">

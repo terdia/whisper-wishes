@@ -126,7 +126,10 @@ class WishCache {
 
       const { data: wish, error: wishError } = await supabase
         .from('wishes')
-        .select('id, user_id, wish_text')
+        .select(`
+          *,
+          user_profile:user_profiles(id, username, avatar_url, is_public)
+        `)
         .eq('id', wishId)
         .single();
 
@@ -150,7 +153,7 @@ class WishCache {
         .from('user_stats')
         .select('user_id')
         .eq('user_id', wish.user_id)
-        .single();
+        .maybeSingle();
 
       if (creatorStatsError && creatorStatsError.code !== 'PGRST116') {
         throw creatorStatsError;
@@ -188,17 +191,25 @@ class WishCache {
       // Invalidate cache after successful water
       this.invalidateCache();
 
+      // Map the wish data to match the Wish interface
+      const mappedWish: Wish = {
+        ...wish,
+        x: Math.random(),
+        y: Math.random(),
+        z: Math.random()
+      };
+
       return {
         success: true,
         userXp: userXpData.new_xp,
         userLevel: userXpData.new_level,
         creatorXp: creatorXpData.new_xp,
         creatorLevel: creatorXpData.new_level,
-        wish: wish
+        wish: mappedWish
       };
     } catch (error) {
       console.error('Error watering wish:', error);
-      return { success: false, error, wish: null };
+      return { success: false, error };
     }
   }
 

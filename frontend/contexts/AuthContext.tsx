@@ -2,6 +2,7 @@ import React, { createContext, useState, useEffect, useContext } from 'react'
 import { useRouter } from 'next/router'
 import { supabase } from '../utils/supabaseClient'
 import { Session, User } from '@supabase/supabase-js'
+import getConfig from 'next/config';
 
 interface UserProfile {
   id: string
@@ -33,7 +34,7 @@ interface AuthContextType {
   sendMagicLink: (email: string) => Promise<void>
   updateUserStats: (newStats: Partial<UserStats>) => void 
   userSubscription: UserSubscription | null;
-  fetchUserSubscription: () => Promise<void>;
+  fetchUserSubscription: (userId: string) => Promise<void>;
 }
 
 interface UserSubscription {
@@ -45,6 +46,9 @@ interface UserSubscription {
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined)
+
+const { publicRuntimeConfig } = getConfig();
+const isProduction = publicRuntimeConfig.NODE_ENV === 'production';
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null)
@@ -212,13 +216,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const signUp = async (email: string, password: string, username: string): Promise<void> => {
     try {
+      const redirectTo = isProduction
+        ? 'https://www.dandywishes.app/welcome'
+        : 'http://localhost:3000/welcome';
+
       // Attempt to sign up the user
       const { data, error } = await supabase.auth.signUp({ 
         email, 
         password,
         options: {
           data: { username },
-          emailRedirectTo: `${window.location.origin}/welcome`
+          emailRedirectTo: redirectTo
         }
       });
       
@@ -284,6 +292,33 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error('Failed to create user onboarding');
       }
   
+      // Create user subscription for free plan
+      const { data: freePlan, error: planError } = await supabase
+        .from('subscription_plans')
+        .select('id')
+        .eq('name', 'Free Tier')
+        .single();
+
+      if (planError || !freePlan) {
+        await supabase.auth.admin.deleteUser(data.user.id);
+        throw new Error('Failed to fetch free plan');
+      }
+
+      const { error: subscriptionError } = await supabase
+        .from('user_subscriptions')
+        .insert({
+          user_id: data.user.id,
+          plan_id: freePlan.id,
+          status: 'active',
+          current_period_start: new Date().toISOString(),
+          current_period_end: new Date(Date.now() + 100 * 365 * 24 * 60 * 60 * 1000).toISOString() // 100 years from now
+        });
+
+      if (subscriptionError) {
+        await supabase.auth.admin.deleteUser(data.user.id);
+        throw new Error('Failed to create user subscription');
+      }
+
     } catch (error) {
       console.error('Error during sign up:', error);
       throw error;

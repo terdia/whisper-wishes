@@ -174,10 +174,6 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
     return <div>Wish not found</div>;
   }
 
-  const truncateWishText = (text: string, maxLength: number) => {
-    return text.length > maxLength ? text.slice(0, maxLength) + '...' : text;
-  };
-
   const getProgressColor = (progress: number) => {
     if (progress < 33) return 'bg-red-500';
     if (progress < 66) return 'bg-yellow-500';
@@ -187,9 +183,9 @@ const AmplifiedWishDetail: React.FC<AmplifiedWishDetailProps> = ({ wishId }) => 
   return (
     <div className="max-w-4xl mx-auto mt-2 p-4">
       <BackButton className="mb-4" />
-      <p className="text-2xl font-bold mb-4">
-        {truncateWishText(wish?.wish_text || '', 20)}
-      </p>
+      <h2 className="text-base sm:text-lg font-bold mb-4 break-words">
+        {wish?.wish_text || ''}
+      </h2>
       <div className="bg-white rounded-lg shadow-md p-6 mb-8">
         <div className="mb-4">
           <div className="flex justify-between items-center mb-2">

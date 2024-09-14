@@ -1,6 +1,6 @@
 // components/amplify/AmplificationManager.ts
 
-import { Amplification, UserSubscription, Wish } from './types';
+import { Amplification, UserSubscription, Wish, AmplifiedWish } from './types';
 import { supabase } from '../../utils/supabaseClient';
 
 export class AmplificationManager {
@@ -67,12 +67,18 @@ export class AmplificationManager {
           objective: objective,
           context: context
         })
-        .select()
+        .select(`
+          *,
+          wish:wishes (*)
+        `)
         .single();
 
       if (amplificationError) throw amplificationError;
 
-      return amplificationData;
+      // Log the amplificationData for inspection
+      console.log('amplificationData:', JSON.stringify(amplificationData, null, 2));
+
+      return amplificationData as Amplification;
     } catch (error) {
       console.error('Error amplifying wish:', error);
       throw error;
@@ -91,7 +97,7 @@ export class AmplificationManager {
     }
   }
 
-  static async getAmplifiedWishes(userId: string | null, page: number = 1, limit: number = 10): Promise<{ amplifiedWishes: Amplification[], totalCount: number, currentPage: number, totalPages: number }> {
+  static async getAmplifiedWishes(userId: string | null, page: number = 1, limit: number = 10): Promise<{ amplifiedWishes: AmplifiedWish[], totalCount: number, currentPage: number, totalPages: number }> {
     try {
       const offset = (page - 1) * limit;
       const currentDate = new Date().toISOString();

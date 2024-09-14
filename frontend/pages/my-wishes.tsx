@@ -11,7 +11,7 @@ import { syncLocalWishes } from '../utils/wishSync'
 import { toast } from 'react-toastify'
 import LoadingSpinner from '../components/LoadingSpinner'
 import SEO from '../components/SEO'
-import { Wish } from '../components/amplify/types'
+import { Wish, Amplification } from '../components/amplify/types'
 import { AmplificationManager } from '../components/amplify/AmplificationManager'
 import { ProgressTracker } from '../components/amplify/ProgressTracker'
 import UpgradeModal from '../components/UpgradeModal'
@@ -167,11 +167,17 @@ const MyWishes: React.FC = () => {
     setSelectedWishForAmplification(wish);
   };
 
-  const handleAmplificationComplete = async (amplifiedWish) => {
+  const handleAmplificationComplete = async (amplifiedWish: Amplification) => {
+    console.log('Received amplifiedWish:', JSON.stringify(amplifiedWish, null, 2));
     setSelectedWishForAmplification(null);
     toast.success('Wish amplified successfully!');
-    await fetchUserSubscription(amplifiedWish.user_id);
-    await fetchAmplifiedWishes();
+    if (amplifiedWish && amplifiedWish.wish) {
+      await fetchUserSubscription(amplifiedWish.wish.user_id);
+      await fetchAmplifiedWishes();
+    } else {
+      console.error('Amplified wish or wish data is missing', amplifiedWish);
+      toast.error('An error occurred while processing the amplified wish');
+    }
   };
 
   const handleProgressChange = useCallback(

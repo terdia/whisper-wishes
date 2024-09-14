@@ -57,6 +57,7 @@ const NotificationCenter: React.FC = () => {
       .from('notifications')
       .select('*')
       .eq('user_id', user.id)
+      .eq('is_read', false) // Only fetch unread notifications
       .order('created_at', { ascending: false })
       .limit(20);
 
@@ -64,8 +65,7 @@ const NotificationCenter: React.FC = () => {
       console.error('Error fetching notifications:', error);
     } else {
       setNotifications(data);
-      const newUnreadCount = data.filter(n => !n.is_read).length;
-      setUnreadCount(newUnreadCount);
+      setUnreadCount(data.length);
     }
   };
 
@@ -83,7 +83,7 @@ const NotificationCenter: React.FC = () => {
     if (error) {
       console.error('Error marking notification as read:', error);
     } else {
-      setNotifications(prev => prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n));
+      setNotifications(prev => prev.filter(n => n.id !== notificationId));
       setUnreadCount(prev => prev - 1);
     }
   };
@@ -141,7 +141,7 @@ const NotificationCenter: React.FC = () => {
     if (error) {
       console.error('Error marking all notifications as read:', error);
     } else {
-      setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
+      setNotifications([]);
       setUnreadCount(0);
     }
   };

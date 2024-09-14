@@ -45,8 +45,8 @@ const Subscription: React.FC = () => {
 
         if (userError) {
           console.error('Error fetching user plan:', userError);
-        } else if (userData) {
-          setCurrentPlan(userData.subscription_plans);
+        } else if (userData && userData.subscription_plans && userData.subscription_plans.length > 0) {
+          setCurrentPlan(userData.subscription_plans[0] as SubscriptionPlan);
         }
       }
 

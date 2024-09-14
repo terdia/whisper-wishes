@@ -44,19 +44,24 @@ const AmplificationModal: React.FC<AmplificationModalProps> = ({
     setIsSubmitting(true);
     try {
       const amplifiedWish = await AmplificationManager.amplifyWish(wishId, user.id, userSubscription, objective, context);
-      if (amplifiedWish) {
-        onAmplificationComplete(amplifiedWish);
-        onClose();
-      } else {
-        onAmplificationError('Failed to amplify wish'); 
+      if (!amplifiedWish) {
+        throw new Error('Failed to amplify wish');
       }
+      
+      // Log the amplifiedWish object
+      console.log('AmplificationModal - amplifiedWish:', JSON.stringify(amplifiedWish, null, 2));
+
+      // Check if the wish property exists
+      if (!amplifiedWish.wish) {
+        console.error('AmplificationModal - wish property is missing:', amplifiedWish);
+        throw new Error('Amplified wish data is incomplete');
+      }
+      
+      onAmplificationComplete(amplifiedWish);
+      onClose();
     } catch (error) {
-      console.info('Error amplifying wish:', error);
-      if (error instanceof Error) {
-        onAmplificationError(error.message);
-      } else {
-        onAmplificationError('Failed to amplify wish');
-      }
+      console.error('Error during wish amplification:', error);
+      onAmplificationError(error instanceof Error ? error.message : 'An unexpected error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -98,19 +103,21 @@ const AmplificationModal: React.FC<AmplificationModalProps> = ({
 
             <div className="grid grid-cols-3 gap-4">
               {[
-                { value: 'support', icon: Users, label: 'Seek Support', color: 'bg-blue-100 text-blue-600' },
-                { value: 'help', icon: HandHeart, label: 'Request Help', color: 'bg-green-100 text-green-600' },
-                { value: 'mentorship', icon: Briefcase, label: 'Find Mentorship', color: 'bg-purple-100 text-purple-600' },
+                { value: 'support', icon: Users, label: 'Seek Support', color: 'bg-blue-100 text-blue-600', hoverColor: 'hover:bg-blue-50' },
+                { value: 'help', icon: HandHeart, label: 'Request Help', color: 'bg-green-100 text-green-600', hoverColor: 'hover:bg-green-50' },
+                { value: 'mentorship', icon: Briefcase, label: 'Find Mentorship', color: 'bg-purple-100 text-purple-600', hoverColor: 'hover:bg-purple-50' },
               ].map((option) => (
                 <Tooltip key={option.value} content={getTooltipContent(option.value)}>
                   <button
                     type="button"
                     onClick={() => setObjective(option.value as typeof objective)}
-                    className={`p-3 rounded-lg flex flex-col items-center justify-center ${
-                      objective === option.value ? `${option.color} ring-2 ring-offset-2 ring-${option.color.split('-')[1]}-400` : 'bg-gray-600'
+                    className={`p-3 rounded-lg flex flex-col items-center justify-center transition-colors duration-200 ${
+                      objective === option.value 
+                        ? `${option.color} ring-2 ring-offset-2 ring-${option.color.split('-')[1]}-400` 
+                        : `bg-gray-100 text-gray-600 ${option.hoverColor}`
                     }`}
                   >
-                    <option.icon size={24} className={objective === option.value ? '' : 'text-gray-500'} />
+                    <option.icon size={24} className={objective === option.value ? '' : 'text-gray-600'} />
                     <span className="mt-2 text-xs font-medium">{option.label}</span>
                   </button>
                 </Tooltip>

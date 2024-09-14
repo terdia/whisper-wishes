@@ -6,8 +6,22 @@ export interface Wish {
   wish_text: string;
   category: string;
   progress: number;
+  created_at: string;
+  support_count: number;
   is_private: boolean;
   milestones: Milestone[];
+}
+
+export interface ExtendedWish extends Wish {
+  user_profiles: {
+    username: string;
+    avatar_url: string;
+    is_public: boolean;
+  };
+  wish_amplifications: {
+    objective: 'support' | 'help' | 'mentorship';
+    context?: string;
+  }[];
 }
 
 export interface Milestone {
@@ -22,6 +36,18 @@ export interface Amplification {
   user_id: string;
   amplified_at: string;
   expires_at: string;
+  objective: 'support' | 'help' | 'mentorship';
+  context?: string;
+  wish: Wish;
+}
+
+export interface AmplifiedWish {
+  id: string;
+  wish_id: string;
+  user_id: string;
+  amplified_at: string;
+  expires_at: string;
+  wishes: ExtendedWish;
   objective: 'support' | 'help' | 'mentorship';
   context?: string;
 }

@@ -27,7 +27,7 @@ const WelcomeScreen: React.FC = () => {
         level: 1
       });
 
-      router.push('/my-wishes');
+      router.push('/');
     }
   };
 

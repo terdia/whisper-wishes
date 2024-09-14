@@ -2,16 +2,48 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { AmplificationManager } from '../components/amplify/AmplificationManager';
 import Link from 'next/link';
-import { Amplification } from '../components/amplify/types';
+import { AmplifiedWish } from '../components/amplify/types';
 import LoadingSpinner from '../components/LoadingSpinner';
-import { Megaphone, ChevronRight, Users, HelpCircle, Briefcase, Clock, Trash2 } from 'lucide-react';
+import { Megaphone, ChevronRight, Users, HelpCircle, Briefcase, Clock, Trash2, X } from 'lucide-react';
 import { toast } from 'react-toastify';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
+
+// Modal component
+const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.ReactNode }> = ({ isOpen, onClose, children }) => {
+  if (!isOpen) return null;
+
+  return (
+    <AnimatePresence>
+      <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+      >
+        <motion.div
+          initial={{ scale: 0.95, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.95, opacity: 0 }}
+          className="bg-white rounded-lg p-6 max-w-md w-full"
+        >
+          <div className="flex justify-end">
+            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+              <X size={24} />
+            </button>
+          </div>
+          {children}
+        </motion.div>
+      </motion.div>
+    </AnimatePresence>
+  );
+};
 
 const MyAmplifiedWishes: React.FC = () => {
   const { user } = useAuth();
-  const [amplifiedWishes, setAmplifiedWishes] = useState<Amplification[]>([]);
+  const [amplifiedWishes, setAmplifiedWishes] = useState<AmplifiedWish[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+  const [amplificationToDelete, setAmplificationToDelete] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -39,6 +71,23 @@ const MyAmplifiedWishes: React.FC = () => {
     } catch (error) {
       console.error('Error removing amplification:', error);
       toast.error('Failed to remove amplification');
+    }
+  };
+
+  const openDeleteModal = (amplificationId: string) => {
+    setAmplificationToDelete(amplificationId);
+    setDeleteModalOpen(true);
+  };
+
+  const closeDeleteModal = () => {
+    setDeleteModalOpen(false);
+    setAmplificationToDelete(null);
+  };
+
+  const confirmDelete = async () => {
+    if (amplificationToDelete) {
+      await handleRemoveAmplification(amplificationToDelete);
+      closeDeleteModal();
     }
   };
 
@@ -87,11 +136,13 @@ const MyAmplifiedWishes: React.FC = () => {
             transition={{ duration: 0.3 }}
           >
             <div className="p-6">
-              <div className="flex justify-between items-start mb-4">
-                <h2 className="text-xl font-semibold">{amplification.wishes.wish_text}</h2>
-                <div className="flex items-center">
+              <div className="flex flex-col sm:flex-row justify-between items-start mb-4 gap-2">
+                <h2 className="text-base sm:text-lg font-semibold flex-grow pr-2 break-words">
+                  {amplification.wishes.wish_text}
+                </h2>
+                <div className="flex items-center whitespace-nowrap mt-2 sm:mt-0">
                   {getObjectiveIcon(amplification.objective)}
-                  <span className="ml-2 text-sm font-medium">
+                  <span className="ml-2 text-xs sm:text-sm font-medium">
                     {amplification.objective.charAt(0).toUpperCase() + amplification.objective.slice(1)}
                   </span>
                 </div>
@@ -129,7 +180,7 @@ const MyAmplifiedWishes: React.FC = () => {
                   </a>
                 </Link>
                 <button
-                  onClick={() => handleRemoveAmplification(amplification.id)}
+                  onClick={() => openDeleteModal(amplification.id)}
                   className="flex items-center text-red-500 hover:text-red-700"
                 >
                   <Trash2 size={16} className="mr-1" />
@@ -140,6 +191,25 @@ const MyAmplifiedWishes: React.FC = () => {
           </motion.div>
         ))}
       </div>
+
+      <Modal isOpen={deleteModalOpen} onClose={closeDeleteModal}>
+        <h2 className="text-xl font-bold mb-4">Confirm Deletion</h2>
+        <p className="mb-6">Are you sure you want to remove this amplification?</p>
+        <div className="flex justify-end space-x-4">
+          <button
+            onClick={closeDeleteModal}
+            className="px-4 py-2 bg-gray-300 text-gray-800 rounded hover:bg-gray-400 transition-colors duration-200"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={confirmDelete}
+            className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 transition-colors duration-200"
+          >
+            Confirm
+          </button>
+        </div>
+      </Modal>
     </div>
   );
 };
