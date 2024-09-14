@@ -15,7 +15,7 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
     amplifiedWishes: AmplifiedWish[];
     totalCount: number;
     currentPage: number;
-    totalPages: number;ﬂ
+    totalPages: number;
   }>({
     amplifiedWishes: [],
     totalCount: 0,
