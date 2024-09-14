@@ -3,7 +3,7 @@ import { motion } from 'framer-motion';
 import { X, Users, Briefcase, HandHeart } from 'lucide-react';
 import { AmplificationManager } from '../components/amplify/AmplificationManager';
 import { useAuth } from '../contexts/AuthContext';
-import { Wish } from '../components/amplify/types';
+import { Amplification } from '../components/amplify/types';
 import Tooltip from './Tooltip';
 
 interface AmplificationModalProps {
@@ -11,7 +11,7 @@ interface AmplificationModalProps {
   onClose: () => void;
   wishId: string;
   isPrivate: boolean;
-  onAmplificationComplete: (updatedWish: Wish) => void;
+  onAmplificationComplete: (updatedWish: Amplification) => void;
   onAmplificationError: (error: string) => void;
 }
 

@@ -15,7 +15,7 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
     amplifiedWishes: AmplifiedWish[];
     totalCount: number;
     currentPage: number;
-    totalPages: number;
+    totalPages: number;ﬂ
   }>({
     amplifiedWishes: [],
     totalCount: 0,
@@ -100,7 +100,9 @@ const AmplifiedWishes: React.FC<AmplifiedWishesProps> = ({ onSupportWish }) => {
                   className="w-10 h-10 rounded-full mr-3 border-2 border-white"
                 />
                 <h3 className="text-lg font-semibold text-white">
-                  {amplifiedWish.wishes.user_profiles.username || 'Anonymous'}
+                  {(amplifiedWish.wishes.user_profiles.username && amplifiedWish.wishes.user_profiles.username.length > 11
+                    ? amplifiedWish.wishes.user_profiles.username.slice(0, 11) + '...'
+                    : amplifiedWish.wishes.user_profiles.username) || 'Anonymous'}
                 </h3>
               </>
             ) : (
