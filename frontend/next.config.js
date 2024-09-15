@@ -9,7 +9,7 @@ const securityHeaders = [
       style-src 'self' 'unsafe-inline';
       img-src 'self' data: https: https://www.googletagmanager.com;
       font-src 'self' data:;
-      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://www.google-analytics.com https://api.stripe.com;
+      connect-src 'self' https://*.supabase.co wss://*.supabase.co https://*.google-analytics.com https://www.googletagmanager.com https://api.stripe.com;
       frame-src 'self' https://www.googletagmanager.com https://js.stripe.com https://hooks.stripe.com;
     `.replace(/\s{2,}/g, ' ').trim()
   },

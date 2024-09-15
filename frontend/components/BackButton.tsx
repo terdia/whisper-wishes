@@ -10,6 +10,12 @@ const BackButton: React.FC<BackButtonProps> = ({ className = '' }) => {
   const router = useRouter();
 
   const handleBack = () => {
+    if (typeof window !== 'undefined' && window.gtag) {
+      window.gtag('event', 'back_button_click', {
+        event_category: 'Navigation',
+        event_label: 'Back Button',
+      })
+    }
     router.back();
   };
 

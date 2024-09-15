@@ -9,6 +9,12 @@ import { STRIPE_PUBLISHABLE_KEY } from '../utils/secret';
 import SEO from '../components/SEO';
 import { useRouter } from 'next/router';
 
+declare global {
+  interface Window {
+    gtag: (command: string, action: string, params: object) => void;
+  }
+}
+
 interface SubscriptionPlan {
   id: string;
   name: string;
@@ -74,6 +80,15 @@ const Subscription: React.FC = () => {
 
     try {
       setIsLoading(true);
+
+      // Track the upgrade button click
+      if (typeof window !== 'undefined' && window.gtag) {
+        window.gtag('event', 'upgrade_button_click', {
+          event_category: 'Subscription',
+          event_label: planId,
+          value: plans.find(plan => plan.id === planId)?.price || 0
+        });
+      }
 
       // Create a Stripe Checkout session
       const response = await fetch('/api/create-checkout-session', {

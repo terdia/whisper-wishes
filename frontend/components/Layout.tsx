@@ -5,6 +5,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { Menu, X, ChevronDown, Loader2, Bell } from 'lucide-react';
 import { User } from '@supabase/supabase-js'
 import NotificationCenter from './NotificationCenter';
+import { usePageTracking } from '../hooks/usePageTracking'
 
 interface UserProfile {
     id: string;
@@ -58,6 +59,8 @@ const UserAvatar: React.FC<{ user: User | null, userProfile: UserProfile | null 
 }
 
 const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  usePageTracking()
+
   const { user, userProfile, signOut, isLoading } = useAuth();
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
