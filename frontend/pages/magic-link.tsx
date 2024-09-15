@@ -2,6 +2,17 @@ import React, { useState } from 'react';
 import { Mail, XCircle, CheckCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useAuth } from '../contexts/AuthContext';
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title:"Magic Link Login",
+      description:"Log in to Dandy Wishes using a magic link sent to your email.",
+      canonical: `https://www.dandywishes.app/magic-link`
+    },
+  };
+};
 
 export default function MagicLinkLogin() {
   const [email, setEmail] = useState('');
@@ -25,9 +36,10 @@ export default function MagicLinkLogin() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-8 bg-white shadow-lg rounded-lg">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-800">Login with Magic Link</h1>
-      <form onSubmit={handleSubmit} className="space-y-6">
+    <>
+      <div className="max-w-md mx-auto mt-8 p-8 bg-white shadow-lg rounded-lg">
+        <h1 className="text-3xl font-bold mb-6 text-center text-blue-800">Login with Magic Link</h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="email" className="block text-sm font-medium text-gray-700 mb-1">Email</label>
           <div className="relative">
@@ -86,5 +98,6 @@ export default function MagicLinkLogin() {
         </div>
       )}
     </div>
+    </>
   );
 }

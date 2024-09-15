@@ -10,7 +10,6 @@ import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt'
 import { syncLocalWishes } from '../utils/wishSync'
 import { toast } from 'react-toastify'
 import LoadingSpinner from '../components/LoadingSpinner'
-import SEO from '../components/SEO'
 import { Wish, Amplification } from '../components/amplify/types'
 import { AmplificationManager } from '../components/amplify/AmplificationManager'
 import { ProgressTracker } from '../components/amplify/ProgressTracker'
@@ -19,6 +18,18 @@ import { useRouter } from 'next/router'
 import debounce from 'lodash/debounce'
 import WishCard from '../components/WishCard'
 import AmplificationModal from '../components/AmplificationModal'
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title: "My Wishes | Manage Your Personal Wishes",
+      description: "Create, organize, and track your personal wishes on Dandy Wishes. Watch your dreams grow and flourish in your own digital dandelion garden.",
+      canonical: `https://www.dandywishes.app/my-wishes`,
+    },
+  };
+};
+
 
 const localizer = momentLocalizer(moment)
 
@@ -206,11 +217,6 @@ const MyWishes: React.FC = () => {
   if (!user || !userProfile) {
     return (
       <>
-        <SEO
-          title="My Wishes | Manage Your Personal Wishes"
-          description="Create, organize, and track your personal wishes on Dandy Wishes. Watch your dreams grow and flourish in your own digital dandelion garden."
-          canonical={`https://dandywishes.app${router.asPath}`}
-        />
         <UnauthenticatedUserPrompt />
       </>
     )
@@ -221,13 +227,9 @@ const MyWishes: React.FC = () => {
   }
 
   return (
+    <>
     <div className={`min-h-[calc(100vh-20rem)] bg-gradient-to-br ${themes[theme]} text-white`}>
-      <SEO 
-        title="My Wishes | Manage Your Personal Wishes"
-        description="Create, organize, and track your personal wishes on Dandy Wishes. Watch your dreams grow and flourish in your own digital dandelion garden."
-        canonical={`https://dandywishes.app${router.asPath}`}
-        noindex={false}
-      />
+      
       <div className="container mx-auto px-4 py-12">
         <motion.h1 
           className="text-4xl font-bold mb-8 text-center"
@@ -503,6 +505,8 @@ const MyWishes: React.FC = () => {
         />
       )}
     </div>
+  )
+    </>
   )
 }
 

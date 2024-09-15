@@ -1,18 +1,23 @@
 import React from 'react';
-import SEO from '../components/SEO';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import BackButton from '../components/BackButton';
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title:"Terms of Service",
+        description:"Understand the terms governing your use of Dandy Wishes, including user responsibilities, content policies, and service guidelines.",
+        canonical: `https://www.dandywishes.app/terms-of-service`
+    },
+  };
+};
+
 const TermsOfService: React.FC = () => {
-  const router = useRouter();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
-      <SEO 
-        title="Terms of Service"
-        description="Understand the terms governing your use of Dandy Wishes, including user responsibilities, content policies, and service guidelines."
-        canonical={`https://dandywishes.app${router.asPath}`}
-      />
+    <>
+     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
       <BackButton className="mb-4" />
       <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-lg p-8">
         <h1 className="text-4xl font-bold mb-6 text-purple-800">Terms of Service</h1>
@@ -141,6 +146,7 @@ const TermsOfService: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

@@ -5,7 +5,6 @@ import AmplifiedWishDetail from '../../components/AmplifiedWishDetail';
 import { useAuth } from '../../contexts/AuthContext';
 import LoadingSpinner from '../../components/LoadingSpinner';
 import UnauthenticatedUserPrompt from '../../components/UnauthenticatedUserPrompt';
-import SEO from '../../components/SEO';
 
 const AmplifiedWishPage: React.FC = () => {
   const router = useRouter();
@@ -19,11 +18,6 @@ const AmplifiedWishPage: React.FC = () => {
   if (!user) {
     return (
       <>
-        <SEO 
-        title={`Amplified Wish`}
-        description="View details and interact with an amplified wish on Dandy Wishes. Support dreams and connect with the wishing community."
-        canonical={`https://dandywishes.app${router.asPath}`}
-        />
         <UnauthenticatedUserPrompt />
       </>
     );
@@ -31,11 +25,6 @@ const AmplifiedWishPage: React.FC = () => {
 
   return (
     <>
-      <SEO 
-        title={`Amplified Wish`}
-        description="View details and interact with an amplified wish on Dandy Wishes. Support dreams and connect with the wishing community."
-        canonical={`https://dandywishes.app${router.asPath}`}
-      />
       <div className="container mx-auto px-4 py-8">
         <AmplifiedWishDetail wishId={wishId as string} />
       </div>
@@ -48,12 +37,20 @@ export const getServerSideProps: GetServerSideProps = async (context) => {
 
   if (!wishId) {
     return {
-      notFound: true,
+      props: {
+        title:"Amplified Wish",
+          description:"View details and interact with an amplified wish on Dandy Wishes. Support dreams and connect with the wishing community.",
+          canonical: `https://www.dandywishes.app/amplified-wish/${wishId}`
+      },
     };
   }
 
   return {
-    props: {},
+    props: {
+      title:"Amplified Wish",
+        description:"View details and interact with an amplified wish on Dandy Wishes. Support dreams and connect with the wishing community.",
+        canonical: `https://www.dandywishes.app/amplified-wish/${wishId}`
+    },
   };
 };
 

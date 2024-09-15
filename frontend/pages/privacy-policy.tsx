@@ -1,18 +1,23 @@
 import React from 'react';
-import { useRouter } from 'next/router';
-import SEO from '../components/SEO';
 import Link from 'next/link';
 import BackButton from '../components/BackButton';
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title:"Privacy Policy",
+      description:"Learn how Dandy Wishes protects your privacy and handles your personal data. Understand your rights and our commitment to data security.",
+      canonical: `https://www.dandywishes.app/privacy-policy`
+    },
+  };
+};
 
 const PrivacyPolicy: React.FC = () => {
-  const router = useRouter();
+
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-purple-100 to-blue-100 py-12 px-4 sm:px-6 lg:px-8">
-      <SEO 
-        title="Privacy Policy"
-        description="Learn how Dandy Wishes protects your privacy and handles your personal data. Understand your rights and our commitment to data security."
-        canonical={`https://dandywishes.app${router.asPath}`}
-      />
       <BackButton className="mb-4" />
       <div className="max-w-3xl mx-auto bg-white shadow-lg rounded-lg p-8">
         <h1 className="text-4xl font-bold mb-6 text-purple-800">Privacy Policy</h1>
@@ -76,6 +81,7 @@ const PrivacyPolicy: React.FC = () => {
         </div>
       </div>
     </div>
+    </>
   );
 };
 

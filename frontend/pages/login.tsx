@@ -3,8 +3,17 @@ import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { AuthApiError } from '@supabase/supabase-js';
-import { useRouter } from 'next/router';
-import SEO from '../components/SEO';
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title:"Log In",
+      description:"Access your Dandy Wishes account. Log in to manage your wishes, interact with the community, and continue your wishing journey.",
+      canonical: `https://www.dandywishes.app/login`
+    },
+  };
+};    
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -12,13 +21,11 @@ export default function Login() {
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { signIn } = useAuth();
-  const router = useRouter();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
       await signIn(email, password);
-      // Handle successful login (e.g., redirect to dashboard)
     } catch (error) {
       console.error('Error signing in:', error);
       if (error instanceof AuthApiError) {
@@ -37,12 +44,8 @@ export default function Login() {
   };
 
   return (
+    <>
     <div className="max-w-md mx-auto mt-8 p-8 bg-white shadow-lg rounded-lg">
-      <SEO 
-        title="Log In"
-        description="Access your Dandy Wishes account. Log in to manage your wishes, interact with the community, and continue your wishing journey."
-        canonical={`https://dandywishes.app${router.asPath}`}
-      />
       <h1 className="text-3xl font-bold mb-6 text-center text-blue-800">Log In</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -129,5 +132,6 @@ export default function Login() {
         </div>
       )}
     </div>
+    </>
   );
 }

@@ -6,7 +6,6 @@ import { toast } from 'react-toastify';
 import { Search, Star,Info, Filter, Grid, List, Flower } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
-import SEO from '../components/SEO';
 import DandelionView from '../components/garden/DandelionView';
 import GridView from '../components/garden/GridView';
 import ListView from '../components/garden/ListView';
@@ -14,6 +13,17 @@ import WishModal from '../components/WishModal';
 import { supabase } from '../utils/supabaseClient';
 import FeaturedWishesModal from '../components/FeaturedWishesModal';
 import { useRouter } from 'next/router';
+import { GetServerSideProps } from 'next';
+
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title:"Global Wish Garden | Explore Wishes Worldwide",
+      description:"Discover and support wishes from around the world in our Global Wish Garden. Join the Dandy Wishes community and help dreams come true.",
+      canonical: `https://www.dandywishes.app/global-garden`
+    },
+  };
+};
 
 interface Wish {
   id: string;
@@ -161,11 +171,6 @@ const GlobalWishGarden: React.FC = () => {
   if (!user || !userProfile) {
     return (
       <>
-        <SEO
-          title="Global Wish Garden | Explore Wishes Worldwide"
-          description="Discover and support wishes from around the world in our Global Wish Garden. Join the Dandy Wishes community and help dreams come true."
-          canonical={`https://dandywishes.app${router.asPath}`}
-        />
         <UnauthenticatedUserPrompt />
       </>
     );
@@ -176,14 +181,8 @@ const GlobalWishGarden: React.FC = () => {
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-4 sm:p-8 flex flex-col flex-grow">
-      <SEO
-        title="Global Wish Garden | Explore Wishes Worldwide"
-        description="Discover and support wishes from around the world in our Global Wish Garden. Join the Dandy Wishes community and help dreams come true."
-        canonical={`https://dandywishes.app${router.asPath}`}
-        noindex={false}
-      />
-
       <div className="mb-6 flex flex-col sm:flex-row items-center justify-between">
         <motion.h1 
           initial={{ opacity: 0, y: -20 }}
@@ -353,6 +352,7 @@ const GlobalWishGarden: React.FC = () => {
         </motion.div>
       )}
     </div>
+    </>
   );
 
 };

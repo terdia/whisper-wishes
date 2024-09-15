@@ -1,19 +1,28 @@
-import type { NextPage } from 'next'
+import type { NextPage, GetStaticProps } from 'next'
 import { useState, useEffect } from 'react'
 import WishCreator from '../components/WishCreator'
-import SEO from '../components/SEO'
 import OnboardingFlow from '../components/OnboardingFlow'
 import { RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import CookieConsent from '../components/CookieConsent'
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/router'
+
+export const getStaticProps: GetStaticProps = async () => {
+  return {
+    props: {
+      title: "Make Your Wishes Come True",
+      description: "Plant your wishes in our digital dandelion field and let your dreams take flight. Share aspirations, support others, and watch as the Dandy Wishes community grows together.",
+      canonical: "https://www.dandywishes.app/",
+      ogImage: "https://www.dandywishes.app/og-home-image.jpg"
+    },
+  }
+}
 
 const Home: NextPage = () => {
+  const router = useRouter()
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(true);
   const [showCondensedTutorial, setShowCondensedTutorial] = useState(false);
   const [showTutorialChoice, setShowTutorialChoice] = useState(false);
-
-  const router = useRouter();
 
   useEffect(() => {
     const onboardingStatus = localStorage.getItem('onboardingComplete');
@@ -38,14 +47,14 @@ const Home: NextPage = () => {
     localStorage.setItem('onboardingComplete', 'true');
   };
 
+  const handleNavigation = (path: string) => {
+    if (router.pathname !== path) {
+      router.push(path);
+    }
+  };
+
   return (
     <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
-      <SEO 
-        title="Make Your Wishes Come True"
-        description="Plant your wishes in our digital dandelion field and let your dreams take flight. Share aspirations, support others, and watch as the Dandy Wishes community grows together."
-        canonical={`https://dandywishes.app${router.asPath}`}
-      />
-
       {!isOnboardingComplete && (
         <OnboardingFlow 
           onComplete={handleOnboardingComplete} 

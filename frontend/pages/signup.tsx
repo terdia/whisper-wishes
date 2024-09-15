@@ -3,9 +3,19 @@ import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import SEO from '../components/SEO';
+import { GetServerSideProps } from 'next';
 
-export default function Signup() {
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title:"Sign Up",
+      description:"Join the Dandy Wishes community. Create an account to start making wishes, connecting with others, and exploring a world of aspirations.",
+      canonical: `https://www.dandywishes.app/signup`
+    },
+  };
+};
+
+const Signup: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [username, setUsername] = useState('');
@@ -57,12 +67,8 @@ export default function Signup() {
   };
 
   return (
-    <div className="max-w-md mx-auto mt-8 p-8 bg-white shadow-lg rounded-lg">
-      <SEO 
-        title="Sign Up"
-        description="Join the Dandy Wishes community. Create an account to start making wishes, connecting with others, and exploring a world of aspirations."
-        canonical={`https://dandywishes.app${router.asPath}`}
-      />
+    <>
+      <div className="max-w-md mx-auto mt-8 p-8 bg-white shadow-lg rounded-lg">
       <h1 className="text-3xl font-bold mb-6 text-center text-blue-800">Sign Up</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
@@ -167,5 +173,8 @@ export default function Signup() {
         </div>
       )}
     </div>
+    </>
   );
 }
+
+export default Signup;

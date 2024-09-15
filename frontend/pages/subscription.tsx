@@ -6,8 +6,7 @@ import { Switch } from '@headlessui/react';
 import BackButton from '../components/BackButton';
 import { loadStripe } from '@stripe/stripe-js';
 import { STRIPE_PUBLISHABLE_KEY } from '../utils/secret';
-import SEO from '../components/SEO';
-import { useRouter } from 'next/router';
+import { GetServerSideProps } from 'next';
 
 declare global {
   interface Window {
@@ -25,6 +24,16 @@ interface SubscriptionPlan {
   stripe_price_id: string;
 }
 
+export const getServerSideProps: GetServerSideProps = async () => {
+  return {
+    props: {
+      title:"Choose Your Subscription Plan",
+        description:"Upgrade your Dandy Wishes experience with our premium subscription plans. Enjoy advanced features and make your wishes come true faster.",
+        canonical: `https://www.dandywishes.app/subscription`
+    },
+  };
+};
+
 const Subscription: React.FC = () => {
   const { user, userProfile, fetchUserSubscription } = useAuth();
   const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
@@ -32,7 +41,6 @@ const Subscription: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [isYearly, setIsYearly] = useState(true);
   const [stripePromise, setStripePromise] = useState(null);
-  const router = useRouter();
 
   useEffect(() => {
     const fetchPlans = async () => {
@@ -165,12 +173,9 @@ const Subscription: React.FC = () => {
   const activePremiumPlan = isYearly ? yearlyPremiumPlan : monthlyPremiumPlan;
 
   return (
+    <>
     <div className="max-w-4xl mx-auto mt-8 p-4">
-      <SEO
-        title="Choose Your Subscription Plan"
-        description="Upgrade your Dandy Wishes experience with our premium subscription plans. Enjoy advanced features and make your wishes come true faster."
-        canonical={`https://dandywishes.app${router.asPath}`}
-      />
+      
       <BackButton className="mb-4" />
       <h1 className="text-4xl font-bold mb-6 text-center text-purple-800">Choose Your Plan</h1>
       
@@ -248,6 +253,7 @@ const Subscription: React.FC = () => {
         )}
       </div>
     </div>
+    </>
   );
 };
 
