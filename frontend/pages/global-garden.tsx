@@ -11,9 +11,9 @@ import DandelionView from '../components/garden/DandelionView';
 import GridView from '../components/garden/GridView';
 import ListView from '../components/garden/ListView';
 import WishModal from '../components/WishModal';
-import AmplifiedWishes from '../components/AmplifiedWishes';
 import { supabase } from '../utils/supabaseClient';
 import FeaturedWishesModal from '../components/FeaturedWishesModal';
+import { useRouter } from 'next/router';
 
 interface Wish {
   id: string;
@@ -64,6 +64,7 @@ const GlobalWishGarden: React.FC = () => {
   const [selectedWish, setSelectedWish] = useState<Wish | null>(null);
   const wishesPerPage = 50;
   const [showFeaturedWishes, setShowFeaturedWishes] = useState(false);
+  const router = useRouter();
 
   const loadWishes = useCallback(async () => {
     if (!user) return;
@@ -161,8 +162,9 @@ const GlobalWishGarden: React.FC = () => {
     return (
       <>
         <SEO
-          title="Global Wish Garden - Join Our Community"
-          description="Explore and support wishes from around the world in our Global Wish Garden. Sign up or log in to participate!"
+          title="Global Wish Garden | Explore Wishes Worldwide"
+          description="Discover and support wishes from around the world in our Global Wish Garden. Join the Dandy Wishes community and help dreams come true."
+          canonical={`https://dandywishes.app${router.asPath}`}
         />
         <UnauthenticatedUserPrompt />
       </>
@@ -176,8 +178,9 @@ const GlobalWishGarden: React.FC = () => {
   return (
     <div className="min-h-screen bg-gradient-to-br from-green-400 to-blue-500 p-4 sm:p-8 flex flex-col flex-grow">
       <SEO
-        title="Global Wish Garden"
-        description="Explore and support wishes from around the world in our Global Wish Garden."
+        title="Global Wish Garden | Explore Wishes Worldwide"
+        description="Discover and support wishes from around the world in our Global Wish Garden. Join the Dandy Wishes community and help dreams come true."
+        canonical={`https://dandywishes.app${router.asPath}`}
         noindex={false}
       />
 

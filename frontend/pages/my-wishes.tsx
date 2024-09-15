@@ -207,8 +207,9 @@ const MyWishes: React.FC = () => {
     return (
       <>
         <SEO
-          title="My Wishes - Manage Your Personal Wishes"
-          description="Create, organize, and track your personal wishes. Sign up or log in to start your wishing journey!"
+          title="My Wishes | Manage Your Personal Wishes"
+          description="Create, organize, and track your personal wishes on Dandy Wishes. Watch your dreams grow and flourish in your own digital dandelion garden."
+          canonical={`https://dandywishes.app${router.asPath}`}
         />
         <UnauthenticatedUserPrompt />
       </>
@@ -222,8 +223,9 @@ const MyWishes: React.FC = () => {
   return (
     <div className={`min-h-[calc(100vh-20rem)] bg-gradient-to-br ${themes[theme]} text-white`}>
       <SEO 
-        title="My Wishes"
-        description="View and manage your personal wishes."
+        title="My Wishes | Manage Your Personal Wishes"
+        description="Create, organize, and track your personal wishes on Dandy Wishes. Watch your dreams grow and flourish in your own digital dandelion garden."
+        canonical={`https://dandywishes.app${router.asPath}`}
         noindex={false}
       />
       <div className="container mx-auto px-4 py-12">

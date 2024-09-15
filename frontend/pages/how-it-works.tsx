@@ -2,6 +2,8 @@ import React from 'react';
 import { motion } from 'framer-motion';
 import { Wind, Heart, Globe, Star, Zap, Sun, Crown } from 'lucide-react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
+import SEO from '../components/SEO';
 
 const HowItWorks: React.FC = () => {
   const steps = [
@@ -14,8 +16,15 @@ const HowItWorks: React.FC = () => {
     { icon: Crown, title: "Go Premium", description: "Upgrade for boosted visibility and exclusive dandelion designs." },
   ];
 
+  const router = useRouter();
+
   return (
     <div className="min-h-[calc(100vh-25rem)] bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 text-white">
+      <SEO
+        title="How Dandy Wishes Works | Your Guide to Wishing"
+        description="Learn how to create, share, and interact with wishes on Dandy Wishes. Discover our unique features and start your wishing journey today."
+        canonical={`https://dandywishes.app${router.asPath}`}
+      />
       <div className="container mx-auto px-4 py-12">
         <motion.h1 
           className="text-4xl sm:text-5xl font-bold mb-8 text-center"

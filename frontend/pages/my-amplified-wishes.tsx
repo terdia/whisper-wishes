@@ -7,6 +7,8 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { Megaphone, ChevronRight, Users, HelpCircle, Briefcase, Clock, Trash2, X } from 'lucide-react';
 import { toast } from 'react-toastify';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/router';
+import SEO from '../components/SEO';
 
 // Modal component
 const Modal: React.FC<{ isOpen: boolean; onClose: () => void; children: React.ReactNode }> = ({ isOpen, onClose, children }) => {
@@ -44,6 +46,7 @@ const MyAmplifiedWishes: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [deleteModalOpen, setDeleteModalOpen] = useState(false);
   const [amplificationToDelete, setAmplificationToDelete] = useState<string | null>(null);
+  const router = useRouter();
 
   useEffect(() => {
     if (user) {
@@ -125,6 +128,11 @@ const MyAmplifiedWishes: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto mt-8 p-4">
+      <SEO
+        title="My Amplified Wishes"
+        description="View and manage your amplified wishes on Dandy Wishes. Track progress and engage with the community supporting your dreams."
+        canonical={`https://dandywishes.app${router.asPath}`}
+      />
       <h1 className="text-3xl font-bold mb-6">My Amplified Wishes</h1>
       <div className="space-y-6">
         {amplifiedWishes.map((amplification) => (

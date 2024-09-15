@@ -19,9 +19,10 @@ const AmplifiedWishPage: React.FC = () => {
   if (!user) {
     return (
       <>
-        <SEO
-          title="Amplified Wish Details"
-          description="View details and interact with an amplified wish."
+        <SEO 
+        title={`Amplified Wish`}
+        description="View details and interact with an amplified wish on Dandy Wishes. Support dreams and connect with the wishing community."
+        canonical={`https://dandywishes.app${router.asPath}`}
         />
         <UnauthenticatedUserPrompt />
       </>
@@ -31,8 +32,9 @@ const AmplifiedWishPage: React.FC = () => {
   return (
     <>
       <SEO 
-        title="Amplified Wish Details"
-        description="View details and interact with an amplified wish."
+        title={`Amplified Wish`}
+        description="View details and interact with an amplified wish on Dandy Wishes. Support dreams and connect with the wishing community."
+        canonical={`https://dandywishes.app${router.asPath}`}
       />
       <div className="container mx-auto px-4 py-8">
         <AmplifiedWishDetail wishId={wishId as string} />

@@ -5,9 +5,10 @@ import withAuth from '../components/withAuth';
 import { Line } from 'react-chartjs-2';
 
 import { Camera, Edit2, Award, Lock } from 'lucide-react';
-import { debounce } from 'lodash';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
+import SEO from '../components/SEO';
+import { useRouter } from 'next/router';
 
 import {
   Chart as ChartJS,
@@ -50,6 +51,7 @@ const Profile = () => {
   const [achievements, setAchievements] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+  const router = useRouter();
 
   let avatarUrl = userProfile?.avatar_url;
   if (userProfile?.avatar_url) {
@@ -296,11 +298,25 @@ const Profile = () => {
   }
 
   if (!user || !userProfile) {
-    return <UnauthenticatedUserPrompt />;
+    return (
+      <>
+        <SEO
+          title="User Profile"
+          description="View and manage your Dandy Wishes profile. Access your wish statistics, achievements, and personalize your wishing experience."
+          canonical={`https://dandywishes.app${router.asPath}`}
+        />
+        <UnauthenticatedUserPrompt />
+      </>
+    );
   }
 
   return (
     <div className="max-w-6xl mx-auto mt-8 p-6 bg-gray-50">
+      <SEO
+        title={`${userProfile?.username || 'User'}'s Profile`}
+        description="View your Dandy Wishes profile, statistics, achievements, and wish activity. Manage your account and track your wishing journey."
+        canonical={`https://dandywishes.app${router.asPath}`}
+      />
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-8">
         <div>
             <h1 className="text-3xl font-bold text-indigo-800">

@@ -83,13 +83,6 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
     };
   }, []);
 
-  const handleNavigation = (path: string) => {
-    if (router.pathname !== path) {
-      router.push(path);
-    }
-    setIsMenuOpen(false);
-  };
-
   const handleSignOut = async () => {
     await signOut();
     setIsMenuOpen(false);
@@ -140,18 +133,26 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </a>
               </Link>
               <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <a onClick={() => handleNavigation('/')} className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  Wishboard
-                </a>
-                <a onClick={() => handleNavigation('/my-wishes')} className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  My Wishes
-                </a>
-                <a onClick={() => handleNavigation('/global-garden')} className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  Global Garden
-                </a>
-                <a onClick={() => handleNavigation('/how-it-works')} className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
-                  How It Works
-                </a>
+                <Link href="/">
+                  <a className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Wishboard
+                  </a>
+                </Link>
+                <Link href="/my-wishes">
+                  <a className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    My Wishes
+                  </a>
+                </Link>
+                <Link href="/global-garden">
+                  <a className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    Global Garden
+                  </a>
+                </Link>
+                <Link href="/how-it-works">
+                  <a className="cursor-pointer border-transparent text-gray-500 hover:border-gray-300 hover:text-gray-700 inline-flex items-center px-1 pt-1 border-b-2 text-sm font-medium">
+                    How It Works
+                  </a>
+                </Link>
               </div>
             </div>
             <div className="hidden sm:ml-6 sm:flex sm:items-center">
@@ -176,8 +177,12 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                   {isDropdownOpen && (
                     <div className="origin-top-right absolute right-0 mt-2 w-48 rounded-md shadow-lg z-50">
                       <div className="py-1 rounded-md bg-white shadow-xs">
-                        <a onClick={() => handleNavigation('/profile')} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Your Profile</a>
-                        <a onClick={() => handleNavigation('/my-amplified-wishes')} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">My Amplified Wishes</a>
+                        <Link href="/profile">
+                          <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Your Profile</a>
+                        </Link>
+                        <Link href="/my-amplified-wishes">
+                          <a className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">My Amplified Wishes</a>
+                        </Link>
                         <a onClick={handleSignOut} className="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 cursor-pointer">Sign out</a>
                       </div>
                     </div>
@@ -185,12 +190,16 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                 </div>
               ) : (
                 <div className="flex items-center">
-                  <a onClick={() => handleNavigation('/login')} className="cursor-pointer text-gray-500 hover:text-gray-700 mr-4">
-                    Login
-                  </a>
-                  <a onClick={() => handleNavigation('/signup')} className="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
-                    Sign Up
-                  </a>
+                  <Link href="/login">
+                    <a className="cursor-pointer text-gray-500 hover:text-gray-700 mr-4">
+                      Login
+                    </a>
+                  </Link>
+                  <Link href="/signup">
+                    <a className="cursor-pointer bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 rounded">
+                      Sign Up
+                    </a>
+                  </Link>
                 </div>
               )}
             </div>
@@ -205,10 +214,18 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
         {isMenuOpen && (
           <div className="sm:hidden">
             <div className="pt-2 pb-3 space-y-1">
-              <a onClick={() => handleNavigation('/')} className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">Wishboard</a>
-              <a onClick={() => handleNavigation('/my-wishes')} className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">My Wishes</a>
-              <a onClick={() => handleNavigation('/global-garden')} className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">Global Garden</a>
-              <a onClick={() => handleNavigation('/how-it-works')} className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">How It Works</a>
+              <Link href="/">
+                <a className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">Wishboard</a>
+              </Link>
+              <Link href="/my-wishes">
+                <a className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">My Wishes</a>
+              </Link>
+              <Link href="/global-garden">
+                <a className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">Global Garden</a>
+              </Link>
+              <Link href="/how-it-works">
+                <a className="block pl-3 pr-4 py-2 border-l-4 border-transparent text-base font-medium text-gray-600 hover:text-gray-800 hover:bg-gray-50 hover:border-gray-300 transition duration-150 ease-in-out cursor-pointer">How It Works</a>
+              </Link>
             </div>
             <div className="pt-4 pb-3 border-t border-gray-200">
               {user ? (
@@ -223,15 +240,23 @@ const Layout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
                     </div>
                   </div>
                   <div className="mt-3 space-y-1">
-                    <a onClick={() => handleNavigation('/profile')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Your Profile</a>
-                    <a onClick={() => handleNavigation('/my-amplified-wishes')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">My Amplified Wishes</a>
+                    <Link href="/profile">
+                      <a className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Your Profile</a>
+                    </Link>
+                    <Link href="/my-amplified-wishes">
+                      <a className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">My Amplified Wishes</a>
+                    </Link>
                     <a onClick={handleSignOut} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Sign out</a>
                   </div>
                 </>
               ) : (
                 <div className="mt-3 space-y-1">
-                  <a onClick={() => handleNavigation('/login')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Login</a>
-                  <a onClick={() => handleNavigation('/signup')} className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Sign Up</a>
+                  <Link href="/login">
+                    <a className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Login</a>
+                  </Link>
+                  <Link href="/signup">
+                    <a className="block px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-800 hover:bg-gray-100 transition duration-150 ease-in-out cursor-pointer">Sign Up</a>
+                  </Link>
                 </div>
               )}
               {user && (

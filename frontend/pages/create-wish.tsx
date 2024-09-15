@@ -4,6 +4,7 @@ import { supabase } from '../utils/supabaseClient'
 import { useRouter } from 'next/router'
 import { useAuth } from '../contexts/AuthContext'
 import { motion } from 'framer-motion'
+import SEO from '../components/SEO'
 
 export default function CreateWish() {
   const [wishText, setWishText] = useState('')
@@ -66,6 +67,11 @@ export default function CreateWish() {
 
   return (
     <div className="min-h-[calc(100vh-10rem)] bg-gradient-to-br from-purple-400 via-pink-500 to-red-500 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      <SEO
+        title="Create a New Wish"
+        description="Plant your dreams in our digital dandelion field. Create a new wish and let it take flight in the Dandy Wishes community."
+        canonical={`https://dandywishes.app${router.asPath}`}
+      />
       {/* Background Dandelions */}
       <div className="absolute inset-0 pointer-events-none">
         <motion.div

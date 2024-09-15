@@ -6,11 +6,14 @@ import OnboardingFlow from '../components/OnboardingFlow'
 import { RefreshCw } from 'lucide-react'
 import Link from 'next/link'
 import CookieConsent from '../components/CookieConsent'
+import { useRouter } from 'next/router';
 
 const Home: NextPage = () => {
   const [isOnboardingComplete, setIsOnboardingComplete] = useState(true);
   const [showCondensedTutorial, setShowCondensedTutorial] = useState(false);
   const [showTutorialChoice, setShowTutorialChoice] = useState(false);
+
+  const router = useRouter();
 
   useEffect(() => {
     const onboardingStatus = localStorage.getItem('onboardingComplete');
@@ -39,7 +42,8 @@ const Home: NextPage = () => {
     <div className="min-h-[calc(100vh-20rem)] bg-gradient-to-r from-purple-400 via-pink-500 to-red-500">
       <SEO 
         title="Make Your Wishes Come True"
-        description="Plant your wishes in our digital dandelion field and let your dreams take flight. Share your aspirations, support others, and watch as the community grows together."
+        description="Plant your wishes in our digital dandelion field and let your dreams take flight. Share aspirations, support others, and watch as the Dandy Wishes community grows together."
+        canonical={`https://dandywishes.app${router.asPath}`}
       />
 
       {!isOnboardingComplete && (

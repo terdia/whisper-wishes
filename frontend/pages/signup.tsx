@@ -3,11 +3,12 @@ import { useAuth } from '../contexts/AuthContext';
 import { Mail, Lock, User, XCircle } from 'lucide-react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
+import SEO from '../components/SEO';
 
 export default function Signup() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [name, setName] = useState('');
+  const [username, setUsername] = useState('');
   const [error, setError] = useState('');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { signUp } = useAuth();
@@ -16,7 +17,7 @@ export default function Signup() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      await signUp(email, password, name);
+      await signUp(email, password, username);
       // Redirect to a "Check your email" page
       router.push('/check-email');
     } catch (error) {
@@ -57,7 +58,12 @@ export default function Signup() {
 
   return (
     <div className="max-w-md mx-auto mt-8 p-8 bg-white shadow-lg rounded-lg">
-      <h1 className="text-3xl font-bold mb-6 text-center text-purple-800">Sign Up</h1>
+      <SEO 
+        title="Sign Up"
+        description="Join the Dandy Wishes community. Create an account to start making wishes, connecting with others, and exploring a world of aspirations."
+        canonical={`https://dandywishes.app${router.asPath}`}
+      />
+      <h1 className="text-3xl font-bold mb-6 text-center text-blue-800">Sign Up</h1>
       <form onSubmit={handleSubmit} className="space-y-6">
         <div>
           <label htmlFor="name" className="block text-sm font-medium text-gray-700 mb-1">Full Name</label>
@@ -66,8 +72,8 @@ export default function Signup() {
             <input
               type="text"
               id="name"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
               required
               className="pl-10 w-full border-2 border-gray-300 rounded-lg p-3 focus:outline-none focus:ring-2 focus:ring-purple-600 focus:border-transparent"
               placeholder="John Doe"
