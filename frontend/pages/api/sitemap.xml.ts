@@ -1,5 +1,4 @@
 import { NextApiRequest, NextApiResponse } from 'next'
-import { supabase } from '../../utils/supabaseClient'
 
 const generateSiteMap = async (host: string) => {
   const baseUrl = `https://${host}`
@@ -18,30 +17,9 @@ const generateSiteMap = async (host: string) => {
     '/create-wish',
     '/my-amplified-wishes',
     '/subscription',
-    '/profile'
+    '/profile',
+    '/wishboard'
   ]
-
-  // Fetch amplified wish IDs from the database
-  const { data: amplifiedWishes, error } = await supabase
-    .from('wish_amplifications')
-    .select('wish_id')
-    .order('amplified_at', { ascending: false })
-    .limit(40)
-
-  console.log('Fetched amplified wishes:', amplifiedWishes)
-
-  if (error) {
-    console.error('Error fetching amplified wishes:', error)
-  } else if (!amplifiedWishes || amplifiedWishes.length === 0) {
-    console.log('No amplified wishes found')
-  } else {
-    // Add amplified wish URLs to the pages array
-    amplifiedWishes.forEach(wish => {
-      pages.push(`/amplified-wish/${wish.wish_id}`)
-    })
-  }
-
-  console.log('Final pages array:', pages)
 
   return `<?xml version="1.0" encoding="UTF-8"?>
    <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">

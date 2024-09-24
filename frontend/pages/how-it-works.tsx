@@ -65,7 +65,7 @@ const HowItWorks: React.FC = () => {
             transition={{ duration: 0.5, delay: 0.7 }}
           >
             <p className="text-lg mb-4">Ready to make your wishes come true?</p>
-            <Link href="/">
+            <Link href="/wishboard">
               <button className="bg-white text-purple-600 font-semibold py-2 px-6 rounded-full hover:bg-opacity-90 transition-colors duration-300">
                 Start Wishing Now
               </button>

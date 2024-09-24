@@ -210,7 +210,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     const { data, error } = await supabase.auth.signInWithPassword({ email, password })
     if (error) throw error
     if (data.user) {
-      router.push('/my-wishes')
+      router.push('/wishboard')
     }
   }
 
