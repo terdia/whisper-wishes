@@ -11,6 +11,7 @@ import { GetServerSideProps } from 'next';
 declare global {
   interface Window {
     gtag: (command: string, action: string, params: object) => void;
+    fbq: (command: string, event: string, params?: object) => void;
   }
 }
 
@@ -80,6 +81,38 @@ const Subscription: React.FC = () => {
     setStripePromise(loadStripe(STRIPE_PUBLISHABLE_KEY));
   }, []);
 
+  useEffect(() => {
+    // Track ViewContent when the page loads
+    if (typeof window !== 'undefined' && window.fbq) {
+      window.fbq('track', 'ViewContent', {
+        content_name: 'Subscription Page',
+        content_category: 'Subscription',
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const query = new URLSearchParams(window.location.search);
+    if (query.get('success')) {
+      console.log('Order placed! You will receive an email confirmation.');
+      // Refresh user subscription data
+      fetchUserSubscription(user.id);
+
+      // Track Subscribe event
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'Subscribe', {
+          value: activePremiumPlan?.price || 0,
+          currency: 'USD',
+          predicted_ltv: activePremiumPlan?.price * (isYearly ? 12 : 1) || 0,
+        });
+      }
+    }
+
+    if (query.get('canceled')) {
+      console.log("Order canceled -- continue to shop around and checkout when you're ready.");
+    }
+  }, []);
+
   const handleUpgrade = async (planId: string) => {
     if (!user) {
       console.error('User not authenticated');
@@ -89,12 +122,23 @@ const Subscription: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // Track the upgrade button click
+      // Track the upgrade button click with Google Analytics
       if (typeof window !== 'undefined' && window.gtag) {
         window.gtag('event', 'upgrade_button_click', {
           event_category: 'Subscription',
           event_label: planId,
           value: plans.find(plan => plan.id === planId)?.price || 0
+        });
+      }
+
+      // Track InitiateCheckout with Facebook Pixel
+      if (typeof window !== 'undefined' && window.fbq) {
+        window.fbq('track', 'InitiateCheckout', {
+          content_name: 'Premium Subscription',
+          content_category: 'Subscription',
+          content_ids: [planId],
+          value: plans.find(plan => plan.id === planId)?.price || 0,
+          currency: 'USD',
         });
       }
 
@@ -127,19 +171,6 @@ const Subscription: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  useEffect(() => {
-    const query = new URLSearchParams(window.location.search);
-    if (query.get('success')) {
-      console.log('Order placed! You will receive an email confirmation.');
-      // Refresh user subscription data
-      fetchUserSubscription(user.id);
-    }
-
-    if (query.get('canceled')) {
-      console.log("Order canceled -- continue to shop around and checkout when you're ready.");
-    }
-  }, []);
 
   const formatFeature = (feature: string, value: any) => {
     switch (feature) {

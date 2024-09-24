@@ -56,17 +56,22 @@ export class AmplificationManager {
 
       // Insert a new record into wish_amplifications table
       const expiresAt = new Date();
-      expiresAt.setDate(expiresAt.getDate() + 7); // Set expiration to 7 days from now
+      expiresAt.setDate(expiresAt.getDate() + 14); // Set expiration to 14 days from now
 
       const { data: amplificationData, error: amplificationError } = await supabase
         .from('wish_amplifications')
-        .insert({
-          wish_id: wishId,
-          user_id: userId,
-          expires_at: expiresAt.toISOString(),
-          objective: objective,
-          context: context
-        })
+        .upsert(
+          {
+            wish_id: wishId,
+            user_id: userId,
+            expires_at: expiresAt.toISOString(),
+            objective: objective,
+            context: context
+          },
+          {
+            onConflict: 'wish_id,user_id'
+          }
+        )
         .select(`
           *,
           wish:wishes (*)
