@@ -2,10 +2,9 @@ import { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
 import { buffer } from 'micro';
 import { supabase } from '../../utils/supabaseClient';
-import { STRIPE_SECRET_KEY, STRIPE_WEBHOOK_SECRET } from '../../utils/secret';
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
-   // @ts-ignore
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
+  // @ts-ignore
   apiVersion: '2023-10-16',
 });
 
@@ -26,7 +25,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   let event: Stripe.Event;
 
   try {
-    event = stripe.webhooks.constructEvent(buf, sig, STRIPE_WEBHOOK_SECRET);
+    event = stripe.webhooks.constructEvent(buf, sig, process.env.STRIPE_WEBHOOK_SECRET);
   } catch (err) {
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }

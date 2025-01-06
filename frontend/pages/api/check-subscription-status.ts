@@ -1,8 +1,7 @@
 import { NextApiRequest, NextApiResponse } from 'next';
 import Stripe from 'stripe';
-import { STRIPE_SECRET_KEY } from '../../utils/secret';
 
-const stripe = new Stripe(STRIPE_SECRET_KEY, {
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY, {
   // @ts-ignore
   apiVersion: '2023-10-16',
 });

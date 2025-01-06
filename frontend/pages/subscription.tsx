@@ -5,7 +5,6 @@ import LoadingSpinner from '../components/LoadingSpinner';
 import { Switch } from '@headlessui/react';
 import BackButton from '../components/BackButton';
 import { loadStripe } from '@stripe/stripe-js';
-import { STRIPE_PUBLISHABLE_KEY } from '../utils/secret';
 import { GetServerSideProps } from 'next';
 
 declare global {
@@ -78,7 +77,7 @@ const Subscription: React.FC = () => {
   }, [user]);
 
   useEffect(() => {
-    setStripePromise(loadStripe(STRIPE_PUBLISHABLE_KEY));
+    setStripePromise(loadStripe(process.env.NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY));
   }, []);
 
   useEffect(() => {
