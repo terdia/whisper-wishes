@@ -84,14 +84,14 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log('Subscription updated:', subscription);
   
-  // Update subscription status only
+  // Update subscription status with correct parameter order
   const { error: subscriptionError } = await supabase.rpc('update_user_subscription', {
     p_user_id: subscription.metadata.user_id,
-    p_plan_id: subscription.items.data[0].price.id,
-    p_stripe_subscription_id: subscription.id,
-    p_status: subscription.status,
     p_current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
     p_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+    p_plan_id: subscription.plan.id,
+    p_status: subscription.status,
+    p_stripe_subscription_id: subscription.id
   });
 
   if (subscriptionError) {
