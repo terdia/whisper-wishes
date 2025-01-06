@@ -68,12 +68,11 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     console.error('Error updating user subscription:', subscriptionError);
   }
 
-  // Update user profile with Stripe IDs
+  // Update user profile with Stripe customer ID only
   const { error: profileError } = await supabase
     .from('user_profiles')
     .update({
-      stripe_customer_id: customerId,
-      current_subscription_id: subscriptionId
+      stripe_customer_id: customerId
     })
     .eq('id', userId);
 
@@ -85,7 +84,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log('Subscription updated:', subscription);
   
-  // Update subscription status
+  // Update subscription status only
   const { error: subscriptionError } = await supabase.rpc('update_user_subscription', {
     p_user_id: subscription.metadata.user_id,
     p_plan_id: subscription.items.data[0].price.id,
@@ -97,18 +96,6 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
 
   if (subscriptionError) {
     console.error('Error updating user subscription:', subscriptionError);
-  }
-
-  // Update user profile with subscription ID
-  const { error: profileError } = await supabase
-    .from('user_profiles')
-    .update({
-      current_subscription_id: subscription.id
-    })
-    .eq('id', subscription.metadata.user_id);
-
-  if (profileError) {
-    console.error('Error updating user profile:', profileError);
   }
 }
 

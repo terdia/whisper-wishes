@@ -441,6 +441,45 @@ const Profile: React.FC = () => {
       </div>
     </div>
 
+      {userSubscription ? (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Subscription Management</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600">Current Plan: <span className="font-semibold capitalize">{userSubscription.tier}</span></p>
+              <p className="text-sm text-gray-500 mt-1">Manage your subscription, view invoices, or update payment details</p>
+            </div>
+            <button
+              onClick={handleStripePortal}
+              disabled={isLoadingPortal}
+              className={`px-4 py-2 rounded-md text-white transition-colors duration-300 ${
+                isLoadingPortal 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              {isLoadingPortal ? 'Loading...' : 'Manage Subscription'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Subscription</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600">Current Plan: <span className="font-semibold">Free Tier</span></p>
+              <p className="text-sm text-gray-500 mt-1">Upgrade to Premium for unlimited amplifications and more features!</p>
+            </div>
+            <Link 
+              href="/subscription"
+              className="px-4 py-2 rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors duration-300"
+            >
+              Upgrade to Premium
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="mt-12">
         <h2 className="text-3xl font-bold mb-6 text-gray-800">Your Wish Statistics</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -532,45 +571,6 @@ const Profile: React.FC = () => {
           }} />
         </div>
       </div>
-
-      {userSubscription ? (
-        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4">Subscription Management</h2>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600">Current Plan: <span className="font-semibold capitalize">{userSubscription.tier}</span></p>
-              <p className="text-sm text-gray-500 mt-1">Manage your subscription, view invoices, or update payment details</p>
-            </div>
-            <button
-              onClick={handleStripePortal}
-              disabled={isLoadingPortal}
-              className={`px-4 py-2 rounded-md text-white transition-colors duration-300 ${
-                isLoadingPortal 
-                  ? 'bg-gray-400 cursor-not-allowed' 
-                  : 'bg-indigo-600 hover:bg-indigo-700'
-              }`}
-            >
-              {isLoadingPortal ? 'Loading...' : 'Manage Subscription'}
-            </button>
-          </div>
-        </div>
-      ) : (
-        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
-          <h2 className="text-2xl font-semibold mb-4">Subscription</h2>
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-gray-600">Current Plan: <span className="font-semibold">Free Tier</span></p>
-              <p className="text-sm text-gray-500 mt-1">Upgrade to Premium for unlimited amplifications and more features!</p>
-            </div>
-            <Link 
-              href="/subscription"
-              className="px-4 py-2 rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors duration-300"
-            >
-              Upgrade to Premium
-            </Link>
-          </div>
-        </div>
-      )}
 
       {showModal && <Modal message={modalMessage} onClose={() => setShowModal(false)} />}
     </div>
