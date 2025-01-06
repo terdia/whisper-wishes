@@ -30,9 +30,12 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(400).send(`Webhook Error: ${err.message}`);
   }
 
-  if (event.type === 'checkout.session.completed' || event.type === 'customer.subscription.updated') {
+  if (event.type === 'checkout.session.completed') {
     const session = event.data.object as Stripe.Checkout.Session;
     await handleCheckoutSessionCompleted(session);
+  } else if (event.type === 'customer.subscription.updated') {
+    const subscription = event.data.object as Stripe.Subscription;
+    await handleSubscriptionUpdated(subscription);
   } else if (event.type === 'checkout.session.expired') {
     console.log('Checkout session expired');
   } else if (event.type === 'checkout.session.async_payment_failed') {
@@ -47,10 +50,12 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   const userId = session.client_reference_id;
   const subscriptionId = session.subscription as string;
   const planId = session.metadata?.plan_id;
+  const customerId = session.customer as string;
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
 
-  const { error } = await supabase.rpc('update_user_subscription', {
+  // Update subscription status
+  const { error: subscriptionError } = await supabase.rpc('update_user_subscription', {
     p_user_id: userId,
     p_plan_id: planId,
     p_stripe_subscription_id: subscriptionId,
@@ -59,7 +64,51 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     p_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
   });
 
-  if (error) {
-    console.error('Error updating user subscription:', error);
+  if (subscriptionError) {
+    console.error('Error updating user subscription:', subscriptionError);
+  }
+
+  // Update user profile with Stripe IDs
+  const { error: profileError } = await supabase
+    .from('user_profiles')
+    .update({
+      stripe_customer_id: customerId,
+      stripe_subscription_id: subscriptionId
+    })
+    .eq('id', userId);
+
+  if (profileError) {
+    console.error('Error updating user profile:', profileError);
   }
 }
+
+async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
+  console.log('Subscription updated:', subscription);
+  
+  // Update subscription status
+  const { error: subscriptionError } = await supabase.rpc('update_user_subscription', {
+    p_user_id: subscription.metadata.user_id,
+    p_plan_id: subscription.plan.id,
+    p_stripe_subscription_id: subscription.id,
+    p_status: subscription.status,
+    p_current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
+    p_current_period_end: new Date(subscription.current_period_end * 1000).toISOString(),
+  });
+
+  if (subscriptionError) {
+    console.error('Error updating user subscription:', subscriptionError);
+  }
+
+  // Update user profile with subscription ID
+  const { error: profileError } = await supabase
+    .from('user_profiles')
+    .update({
+      stripe_subscription_id: subscription.id
+    })
+    .eq('id', subscription.metadata.user_id);
+
+  if (profileError) {
+    console.error('Error updating user profile:', profileError);
+  }
+}
+
