@@ -84,11 +84,13 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log('Subscription updated:', subscription);
   
-  // First, get the subscription plan ID using the Stripe price ID
+  // First, get the subscription plan ID using the Stripe price ID from the first item
+  const priceId = subscription.items.data[0].price.id;
+  
   const { data: planData, error: planError } = await supabase
     .from('subscription_plans')
     .select('id')
-    .eq('stripe_price_id', subscription.plan.id)
+    .eq('stripe_price_id', priceId)
     .single();
 
   if (planError) {
