@@ -40,6 +40,8 @@ interface AuthContextType {
 
 interface UserSubscription {
   tier: 'free' | 'premium';
+  stripe_subscription_id?: string;
+  isSubscriptionActive: boolean;
   features: {
     amplifications_per_month: number | 'unlimited';
     messages_per_wish: number | 'unlimited';
@@ -108,8 +110,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) {
       console.error('Error fetching user subscription:', error);
     } else if (data) {
+      const isActive = data.stripe_subscription_id && 
+        data.status === 'active' && 
+        new Date(data.current_period_end) > new Date();
+
       const subscription: UserSubscription = {
         tier: data.subscription_plans.name.toLowerCase() === 'Free Tier' ? 'free' : 'premium',
+        stripe_subscription_id: data.stripe_subscription_id,
+        isSubscriptionActive: isActive,
         features: {
           amplifications_per_month: data.subscription_plans.features.amplifications_per_month,
           messages_per_wish: data.subscription_plans.features.messages_per_wish,

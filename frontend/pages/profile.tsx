@@ -441,7 +441,7 @@ const Profile: React.FC = () => {
       </div>
     </div>
 
-      {userSubscription?.stripe_subscription_id ? (
+      {userSubscription?.isSubscriptionActive ? (
         <div className="mt-6 bg-white p-6 rounded-lg shadow-md">
           <h2 className="text-2xl font-semibold mb-4">Subscription Management</h2>
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
