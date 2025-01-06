@@ -88,7 +88,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   // Update subscription status
   const { error: subscriptionError } = await supabase.rpc('update_user_subscription', {
     p_user_id: subscription.metadata.user_id,
-    p_plan_id: subscription.plan.id,
+    p_plan_id: subscription.items.data[0].price.id,
     p_stripe_subscription_id: subscription.id,
     p_status: subscription.status,
     p_current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
