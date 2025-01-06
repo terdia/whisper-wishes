@@ -73,7 +73,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
     .from('user_profiles')
     .update({
       stripe_customer_id: customerId,
-      stripe_subscription_id: subscriptionId
+      current_subscription_id: subscriptionId
     })
     .eq('id', userId);
 
@@ -103,7 +103,7 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   const { error: profileError } = await supabase
     .from('user_profiles')
     .update({
-      stripe_subscription_id: subscription.id
+      current_subscription_id: subscription.id
     })
     .eq('id', subscription.metadata.user_id);
 
