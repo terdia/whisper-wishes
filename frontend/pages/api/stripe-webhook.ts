@@ -84,7 +84,19 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
 async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
   console.log('Subscription updated:', subscription);
   
-  // First, get the subscription plan ID using the Stripe price ID from the first item
+  // First, get the user ID using the Stripe customer ID
+  const { data: userData, error: userError } = await supabase
+    .from('user_profiles')
+    .select('id')
+    .eq('stripe_customer_id', subscription.customer)
+    .single();
+
+  if (userError) {
+    console.error('Error finding user:', userError);
+    return;
+  }
+
+  // Get the subscription plan ID using the Stripe price ID
   const priceId = subscription.items.data[0].price.id;
   
   const { data: planData, error: planError } = await supabase
@@ -98,10 +110,10 @@ async function handleSubscriptionUpdated(subscription: Stripe.Subscription) {
     return;
   }
 
-  // Update subscription status with the correct plan ID
+  // Update subscription status matching the function parameters order
   const { error: subscriptionError } = await supabase.rpc('update_user_subscription', {
-    p_user_id: subscription.metadata.user_id,
-    p_plan_id: planData.id,  
+    p_user_id: userData.id,  // Using the user ID from user_profiles
+    p_plan_id: planData.id,
     p_stripe_subscription_id: subscription.id,
     p_status: subscription.status,
     p_current_period_start: new Date(subscription.current_period_start * 1000).toISOString(),
