@@ -35,6 +35,7 @@ interface AuthContextType {
   updateUserStats: (newStats: Partial<UserStats>) => void 
   userSubscription: UserSubscription | null;
   fetchUserSubscription: (userId: string) => Promise<void>;
+  getStripePortalUrl: () => Promise<string>;
 }
 
 interface UserSubscription {
@@ -354,6 +355,26 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     if (error) throw error
   }
 
+  const getStripePortalUrl = async (): Promise<string> => {
+    if (!user) throw new Error('User must be logged in');
+
+    const response = await fetch('/api/create-portal-session', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ userId: user.id }),
+    });
+
+    if (!response.ok) {
+      const error = await response.json();
+      throw new Error(error.message || 'Failed to create portal session');
+    }
+
+    const { url } = await response.json();
+    return url;
+  };
+
   return (
     <AuthContext.Provider value={{ 
       user, 
@@ -368,7 +389,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       updateProfile, 
       updateUserStats,
       isLoading,
-      sendMagicLink
+      sendMagicLink,
+      getStripePortalUrl,
     }}>
       {children}
     </AuthContext.Provider>

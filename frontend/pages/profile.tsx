@@ -6,6 +6,7 @@ import { GetServerSideProps } from 'next';
 import { Camera, Edit2, Award, Lock } from 'lucide-react';
 import LoadingSpinner from '../components/LoadingSpinner';
 import UnauthenticatedUserPrompt from '../components/UnauthenticatedUserPrompt';
+import Link from 'next/link';
 
 import {
   Chart as ChartJS,
@@ -40,7 +41,7 @@ export const getServerSideProps: GetServerSideProps = async () => {
 };
 
 const Profile: React.FC = () => {
-  const { user, userProfile, userStats, updateProfile, isLoading: authLoading } = useAuth();
+  const { user, userProfile, userStats, updateProfile, isLoading: authLoading, userSubscription, getStripePortalUrl } = useAuth();
   const [isLoading, setIsLoading] = useState(true);
   const [isEditing, setIsEditing] = useState(false);
   const [localProfile, setLocalProfile] = useState({
@@ -58,6 +59,7 @@ const Profile: React.FC = () => {
   const [achievements, setAchievements] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [modalMessage, setModalMessage] = useState('');
+  const [isLoadingPortal, setIsLoadingPortal] = useState(false);
 
   let avatarUrl = userProfile?.avatar_url;
   if (userProfile?.avatar_url) {
@@ -187,6 +189,20 @@ const Profile: React.FC = () => {
       setShowModal(true);
     }
   }
+
+  const handleStripePortal = async () => {
+    try {
+      setIsLoadingPortal(true);
+      const url = await getStripePortalUrl();
+      window.location.href = url;
+    } catch (error) {
+      console.error('Error accessing Stripe portal:', error);
+      setModalMessage('Failed to access subscription management. Please try again.');
+      setShowModal(true);
+    } finally {
+      setIsLoadingPortal(false);
+    }
+  };
 
   const Modal = ({ message, onClose }) => (
     <div className="fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
@@ -516,6 +532,45 @@ const Profile: React.FC = () => {
           }} />
         </div>
       </div>
+
+      {userSubscription ? (
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Subscription Management</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600">Current Plan: <span className="font-semibold capitalize">{userSubscription.tier}</span></p>
+              <p className="text-sm text-gray-500 mt-1">Manage your subscription, view invoices, or update payment details</p>
+            </div>
+            <button
+              onClick={handleStripePortal}
+              disabled={isLoadingPortal}
+              className={`px-4 py-2 rounded-md text-white transition-colors duration-300 ${
+                isLoadingPortal 
+                  ? 'bg-gray-400 cursor-not-allowed' 
+                  : 'bg-indigo-600 hover:bg-indigo-700'
+              }`}
+            >
+              {isLoadingPortal ? 'Loading...' : 'Manage Subscription'}
+            </button>
+          </div>
+        </div>
+      ) : (
+        <div className="mt-8 bg-white p-6 rounded-lg shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Subscription</h2>
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-gray-600">Current Plan: <span className="font-semibold">Free Tier</span></p>
+              <p className="text-sm text-gray-500 mt-1">Upgrade to Premium for unlimited amplifications and more features!</p>
+            </div>
+            <Link 
+              href="/subscription"
+              className="px-4 py-2 rounded-md text-white bg-purple-600 hover:bg-purple-700 transition-colors duration-300"
+            >
+              Upgrade to Premium
+            </Link>
+          </div>
+        </div>
+      )}
 
       {showModal && <Modal message={modalMessage} onClose={() => setShowModal(false)} />}
     </div>
